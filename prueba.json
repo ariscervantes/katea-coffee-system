@@ -1,0 +1,12 @@
+{
+  "matricula": "20201234",
+  "base": "http://127.0.0.1:8000",
+  "coleccion": "/equipos",
+  "campo_id": "id",
+  "valido":   {"nombre": "Fuente de poder", "tipo": "fuente", "inventario": "LAB-020"},
+  "invalido": {"nombre": "", "tipo": "tostadora", "inventario": "123"},
+  "metodo_cambio": "PUT",
+  "cambio":   {"nombre": "Fuente de poder 30V", "tipo": "fuente", "inventario": "LAB-020"},
+  "id_inexistente": "999999",
+  "encabezados": {}
+}
