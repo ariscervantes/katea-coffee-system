@@ -47,6 +47,7 @@ def test_todos_los_campos_son_obligatorios(campo):
     ("precio", math.inf), ("precio", math.nan),
     ("imagen_url", ""), ("imagen_url", "   "), ("imagen_url", 12),
     ("imagen_url", "foto.gif"), ("imagen_url", "foto.jpg?x=1"),
+    ("imagen_url", ".jpg"),
     ("disponible", "true"), ("disponible", "false"),
     ("disponible", 1), ("disponible", 0),
     ("preparacion", "Frio"), ("preparacion", "helado"), ("preparacion", 1),

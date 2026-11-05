@@ -51,8 +51,13 @@ class ProductoEntrada(BaseModel):
     @field_validator("imagen_url")
     @classmethod
     def validar_imagen(cls, valor: str) -> str:
+        if "\n" in valor or "\r" in valor:
+            raise ValueError("imagen_url no debe contener saltos de línea")
         if not valor.endswith((".jpg", ".jpeg", ".png", ".webp")):
             raise ValueError("imagen_url debe terminar en .jpg, .jpeg, .png o .webp")
+        nombre = valor.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+        if not nombre.rsplit(".", 1)[0].strip():
+            raise ValueError("imagen_url debe tener un nombre antes de la extensión")
         return valor
 
 
