@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Evidencias individuales.
+reporte_U3S2_*.txt
+evidencias/

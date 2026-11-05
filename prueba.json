@@ -1,0 +1,33 @@
+{
+	"matricula": "20209634",
+	"base": "http://127.0.0.1:8000",
+	"coleccion": "/productos",
+	"campo_id": "id",
+	"valido": {
+		"nombre": "Latte",
+		"descripcion": "Cafe americano con leche",
+		"precio": 50,
+		"imagen_url": "latte.jpg",
+		"disponible": true,
+		"preparacion": "frio"
+	},
+	"invalido": {
+		"nombre": "",
+		"descripcion": "Cafe",
+		"precio": "50",
+		"imagen_url": "latte.jpg",
+		"disponible": true,
+		"preparacion": "frio"
+	},
+	"metodo_cambio": "PUT",
+	"cambio": {
+		"nombre": "Capuccino",
+		"descripcion": "Cafe espresso con leche",
+		"precio": 55,
+		"imagen_url": "capuccino.jpg",
+		"disponible": false,
+		"preparacion": "caliente"
+	},
+	"id_inexistente": "999999",
+	"encabezados": {}
+}
