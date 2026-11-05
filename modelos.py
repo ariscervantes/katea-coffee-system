@@ -44,9 +44,9 @@ class ProductoEntrada(BaseModel):
         return numero
 
     @field_serializer("precio", when_used="json")
-    def serializar_precio(self, valor: Decimal) -> float:
+    def serializar_precio(self, valor: Decimal) -> int | float:
         # Decimal es interno; en JSON el contrato exige un número, no texto.
-        return float(valor)
+        return int(valor) if valor == valor.to_integral_value() else float(valor)
 
     @field_validator("imagen_url")
     @classmethod
