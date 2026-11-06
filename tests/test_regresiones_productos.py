@@ -6,22 +6,21 @@ import httpx
 import pytest
 
 from main import crear_app
-from memoria import productos
 from test_base_api import datos_validos
 
 
 @pytest.fixture(autouse=True)
-def aislar_memoria():
-    anteriores = dict(productos)
-    productos.clear()
+def aislar_repositorio(repositorio_falso):
+    repositorio_falso.vaciar()
     yield
-    productos.clear()
-    productos.update(anteriores)
+    repositorio_falso.vaciar()
 
 
-def cliente():
+def cliente(repositorio_falso):
     return httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=crear_app(), raise_app_exceptions=False),
+        transport=httpx.ASGITransport(
+            app=crear_app(repositorio_falso), raise_app_exceptions=False
+        ),
         base_url="http://test",
     )
 
@@ -42,9 +41,9 @@ def error(respuesta, codigo):
     ("foto.jpg", True), ("/img/foto.jpeg", True),
     ("https://ejemplo.com/foto.png", True), ("/img/café.webp", True),
 ])
-def test_imagen_post_y_put(imagen, valida):
+def test_imagen_post_y_put(repositorio_falso, imagen, valida):
     async def comprobar():
-        async with cliente() as c:
+        async with cliente(repositorio_falso) as c:
             entrada = datos_validos() | {"imagen_url": imagen}
             r = await c.post("/productos", json=entrada)
             if valida:
@@ -55,7 +54,7 @@ def test_imagen_post_y_put(imagen, valida):
                 assert actualizado.json()["imagen_url"] == imagen
             else:
                 error(r, 422)
-                assert not productos
+                assert repositorio_falso.listar() == []
                 valido = await c.post("/productos", json=datos_validos())
                 ruta = f'/productos/{valido.json()["id"]}'
                 error(await c.put(ruta, json=entrada), 422)
@@ -63,9 +62,9 @@ def test_imagen_post_y_put(imagen, valida):
     asyncio.run(comprobar())
 
 
-def test_errores_crud_duplicados_y_put_repetido():
+def test_errores_crud_duplicados_y_put_repetido(repositorio_falso):
     async def comprobar():
-        async with cliente() as c:
+        async with cliente(repositorio_falso) as c:
             for metodo, ruta in [("POST", "/productos"), ("PUT", "/productos/999999")]:
                 error(await c.request(metodo, ruta, content='{"precio":', headers={"Content-Type": "application/json"}), 400)
                 error(await c.request(metodo, ruta, json={}), 422)

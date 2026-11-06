@@ -8,7 +8,6 @@ import pytest
 from pydantic import ValidationError
 
 from main import app, crear_app
-from memoria import generar_id, productos
 from modelos import ProductoEntrada
 
 
@@ -76,13 +75,6 @@ def test_opciones_validas(extension, preparacion, disponible):
     ProductoEntrada.model_validate(datos_validos() | {"nombre": "a" * 80, "descripcion": "a" * 200})
 
 
-def test_memoria_e_ids():
-    antes = dict(productos)
-    primero, segundo = generar_id(), generar_id()
-    assert segundo == primero + 1
-    assert productos == antes  # Generar un id no guarda datos.
-
-
 def test_estan_registradas_las_cinco_operaciones_de_productos():
     operaciones = {
         (metodo, ruta.path)
@@ -99,8 +91,22 @@ def test_estan_registradas_las_cinco_operaciones_de_productos():
     }
 
 
-def test_errores_http():
-    temporal = crear_app()
+def test_contrato_documenta_los_codigos_http():
+    operaciones = app.openapi()["paths"]
+    esperados = {
+        ("get", "/productos"): {200, 500},
+        ("get", "/productos/{id}"): {200, 404, 422, 500},
+        ("post", "/productos"): {201, 400, 409, 422, 500},
+        ("put", "/productos/{id}"): {200, 400, 404, 409, 422, 500},
+        ("delete", "/productos/{id}"): {204, 404, 422, 500},
+    }
+    for (metodo, ruta), codigos in esperados.items():
+        documentados = {int(codigo) for codigo in operaciones[ruta][metodo]["responses"]}
+        assert codigos <= documentados
+
+
+def test_errores_http(repositorio_falso):
+    temporal = crear_app(repositorio_falso)
 
     @temporal.post("/validar")
     async def validar(producto: ProductoEntrada):

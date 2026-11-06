@@ -19,7 +19,7 @@ El cliente consulta un menú digital, selecciona productos y confirma una orden.
 1. Revisar la ficha original y los códigos de respuesta.
 2. Resolver individualmente los ejercicios de filtros y detección de bugs.
 3. Acordar antes de programar las reglas de un recurso: productos.
-4. Implementar cinco endpoints: GET /productos, GET /productos/{id}, POST /productos, PUT /productos/{id} y DELETE /productos/{id}. Almacenar datos en memoria; la base de datos se abordará después.
+4. Implementar cinco endpoints: GET /productos, GET /productos/{id}, POST /productos, PUT /productos/{id} y DELETE /productos/{id}. Almacenar los datos en MySQL.
 5. Usar errores con formato {"error": "...", "detalles": [...]}; seguir la guía de clase sobre 400, 404, 409 y 422.
 6. Adaptar `prueba.json`, configurar la matrícula individual y ejecutar `python probar_api.py` con la API en marcha; objetivo: 11 de 11, ya obtenido por Aris y nuevamente en la verificación aislada del asistente. Revisar también las reglas de validación y 409, que no están todas cubiertas por ese script.
 7. Trabajar en una rama y abrir un pull request que describa qué cambia y cómo se probó, incluyendo la línea RESULTADO. Otro integrante debe revisarlo según la lista de la diapositiva 18.
@@ -58,26 +58,35 @@ Códigos requeridos: 400 para JSON mal formado, 422 para datos inválidos, 404 p
 ## Estado de la corrección local (2026-11-04)
 
 - Al comenzar, el único cambio local era la matrícula de `prueba.json`: de `20205116` a `20204413`. Se conserva intacto. No se consultó el remoto ni se creó commit, push, aprobación o merge.
-- CRUD en memoria de un solo proceso. Los datos e IDs se pierden al reiniciar. No hay base de datos, login, pedidos, pagos, QR ni interfaz visual.
+- CRUD con almacenamiento en MySQL. La tabla se crea al iniciar si no existe y los datos e IDs se conservan al reiniciar. No hay login, pedidos, pagos, QR ni interfaz visual.
 - Se retiraron `rutas.py`, su registro en `main.py`, la aceptación de Decimal como entrada y las pruebas exclusivas de precisión. `main.py` vuelve a coincidir con la versión previa a la revisión. El Decimal interno y el serializador originales se conservan.
 - La corrección de imagen se limita a extensión literal, nombre de archivo no vacío y rechazo de CR/LF. Se retiraron urlsplit, decodificación porcentual, restricciones de esquema/host y aceptación de mayúsculas o parámetros.
 - Continúan los campos obligatorios y el rechazo de campos extra, incluido id. Nombre y descripción se recortan. Disponible usa StrictBool; preparación tiene tres valores. Los duplicados comparan nombre con strip/casefold y preparación; PUT excluye el propio ID.
 
+### Migración a MySQL (2026-11-06)
+
+- Se eliminó `memoria.py`. La tabla `productos` vive en MySQL y se crea al iniciar si no existe; el ID es `AUTO_INCREMENT`.
+- `basedatos.py` carga `.env` con `python-dotenv`, valida `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` y `DB_NAME`, y abre una conexión por operación con transacción.
+- `repositorio.py` contiene todas las consultas. Usa marcadores `%s` de MySQL y parámetros separados; no concatena datos del cliente al texto del SQL.
+- La pareja nombre/preparación tiene una restricción única en MySQL. La comparación normaliza nombre con `strip().casefold()` y se guarda en una columna con colación binaria. Si dos peticiones compiten, la base devuelve el conflicto y la API responde 409.
+- `.env.example` contiene solo datos de ejemplo. `sql/esquema.sql` permite crear la tabla manualmente.
+- Las respuestas de las cinco rutas declaran sus códigos con `responses`. El contrato exportado se genera con `python scripts/generar_contrato.py` en `docs/openapi.json`; el resumen está en `docs/CONTRATO_API.md`. Swagger UI sigue disponible en `/docs`.
+
 ### Verificación real de esta corrección
 
-- `.venv/bin/python -m pytest -q -p no:cacheprovider`, con bytecode desactivado, tras reducir el alcance: **90 passed in 0.86s**. Se conservan las pruebas originales, se añaden casos de imagen en modelo y POST/PUT, y se conserva la regresión general de errores, duplicados, CRUD y PUT repetido, que no depende de la corrección de precisión. Los errores comprobados usan 400/404/409/422 y formato uniforme; no se observaron respuestas 500.
+- `.venv/bin/python -m pytest -q -p no:cacheprovider`, con bytecode desactivado, tras reducir el alcance: **90 passed**. Se conservan las pruebas originales, se añaden casos de imagen en modelo y POST/PUT, se conserva la regresión general de errores, duplicados, CRUD y PUT repetido, y se añade una comprobación de los códigos documentados en el contrato. Los errores comprobados usan 400/404/409/422 y formato uniforme; no se observaron respuestas 500. Las pruebas HTTP usan un repositorio falso inyectado; la aplicación real usa MySQL.
 - Aris había ejecutado personalmente `probar_api.py` con matrícula `20204413`: **11 de 11**. Ese resultado es previo y pertenece a su ejecución.
-- En la revisión anterior, antes de reducir el alcance, el asistente ejecutó nuevamente el script original contra Uvicorn aislado en `http://127.0.0.1:37383`: **RESULTADO: 11 de 11**, salida 0. Se utilizó una copia temporal de `prueba.json` con solo la base cambiada al puerto temporal y conservando la matrícula. La instancia se detuvo al terminar. No se tocó el servidor habitual ni se sobrescribió la evidencia anterior.
-- Reporte de esa ejecución anterior (no se repitió el script tras reducir el alcance): `/tmp/katea-revision-nonbaek8/reporte_U3S2_20204413.txt`. Es temporal; respaldarlo si se desea conservar como evidencia. No se generaron capturas.
+- En la revisión anterior, antes de reducir el alcance, el asistente ejecutó el script original contra Uvicorn aislado en `http://127.0.0.1:37383`: **RESULTADO: 11 de 11**, salida 0. Se utilizó una copia temporal de `prueba.json` con solo la base cambiada al puerto temporal. Esa instancia se detuvo al terminar y no se sobrescribió la evidencia anterior.
+- En la verificación de la migración a MySQL, el asistente levantó MySQL 8.4 y Uvicorn en `127.0.0.1:18000` con una base temporal. `probar_api.py` obtuvo **11 de 11** y se detuvieron ambos servicios después. Se usó una copia temporal de la configuración; no se modificaron `prueba.json`, `probar_api.py` ni sus reportes. Es una ejecución del asistente, no una evidencia personal.
 - SHA-256 de `probar_api.py`, sin cambios: `b257b622dbe127c35db8f419fdce3e1b1cd0755e0912d09a0d6cfcfafe80b5dd`.
-- SHA-256 de `prueba.json`, conservado: `6d9ee5bb115002ddbb2d5fe4c1548134ecfb95019c946485f9d1d11f994a7549`.
+- `prueba.json` tiene cambios locales previos de matrícula y una clave `openapi`; revisar `git diff -- prueba.json` antes de cualquier commit.
 
 ## Pendientes y límites
 
 - Revisar el diff antes de autorizar cualquier commit, push, aprobación o merge. No se ha verificado el estado remoto del PR.
 - Conservar evidencias personales reales y respaldarlas; no atribuir la ejecución del asistente a Aris. Git ignora reportes y `evidencias/`, pero no la matrícula local en `prueba.json`.
 - El documento original menciona `Ficha_original_Katea.md`, que no se localizó en el repositorio. Las reglas usadas aquí son las indicadas y aclaradas por Aris en la conversación.
-- El almacenamiento sigue siendo temporal y de un solo proceso. Las pruebas cubren los casos descritos, sin afirmar ausencia de fallos para cualquier entrada posible.
+- El almacenamiento usa MySQL y persiste entre reinicios. Las pruebas cubren los casos descritos, sin afirmar ausencia de fallos para cualquier entrada posible.
 - Falta completar la revisión humana y las evidencias/reflexión de la actividad. No inventar resultados ni capturas.
 
 ## Mantenimiento de la documentación

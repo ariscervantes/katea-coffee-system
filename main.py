@@ -1,70 +1,105 @@
 """Punto de entrada: uvicorn main:app --reload."""
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Response, status
 
 from errores import registrar_manejadores
-from memoria import generar_id, productos
-from modelos import Producto, ProductoEntrada
+from modelos import Producto, ProductoEntrada, RespuestaError
+from repositorio import ProductoDuplicado, RepositorioProductos
 
 
-def buscar_producto(id: int) -> Producto:
-    if id not in productos:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    return productos[id]
+MENSAJE_NO_ENCONTRADO = "Producto no encontrado"
+MENSAJE_DUPLICADO = "Ya existe un producto con ese nombre y preparación"
+
+RESPUESTA_400 = {"model": RespuestaError, "description": "JSON mal formado"}
+RESPUESTA_404 = {"model": RespuestaError, "description": "Producto no encontrado"}
+RESPUESTA_409 = {"model": RespuestaError, "description": "Nombre y preparación duplicados"}
+RESPUESTA_422 = {"model": RespuestaError, "description": "Datos o parámetros inválidos"}
+RESPUESTA_500 = {"model": RespuestaError, "description": "Error interno del servidor"}
 
 
-def comprobar_duplicado(entrada: ProductoEntrada, excluir_id: int | None = None) -> None:
-    nombre = entrada.nombre.strip().casefold()
-    for producto in productos.values():
-        if (
-            producto.id != excluir_id
-            and producto.nombre.strip().casefold() == nombre
-            and producto.preparacion == entrada.preparacion
-        ):
-            raise HTTPException(
-                status_code=409,
-                detail="Ya existe un producto con ese nombre y preparación",
-            )
+def crear_app(repositorio: RepositorioProductos | None = None) -> FastAPI:
+    almacen = repositorio or RepositorioProductos()
 
+    @asynccontextmanager
+    async def ciclo_vida(app: FastAPI):
+        almacen.inicializar()
+        yield
 
-def producto_con_id(entrada: ProductoEntrada, id: int) -> Producto:
-    # FastAPI ya validó la entrada y el id lo proporciona la API.
-    # Evitamos revalidar el Decimal interno con el validador de números JSON.
-    return Producto.model_construct(id=id, **entrada.model_dump())
-
-
-def crear_app() -> FastAPI:
-    app = FastAPI(title="Katea — API de productos")
+    app = FastAPI(title="Katea — API de productos", version="1.0.0", lifespan=ciclo_vida)
     registrar_manejadores(app)
 
-    @app.get("/productos", response_model=list[Producto])
-    async def listar_productos() -> list[Producto]:
-        # Esta práctica incluye también los no disponibles.
-        return list(productos.values())
+    def buscar_producto(id: int) -> Producto:
+        producto = almacen.obtener(id)
+        if producto is None:
+            raise HTTPException(status_code=404, detail=MENSAJE_NO_ENCONTRADO)
+        return producto
 
-    @app.get("/productos/{id}", response_model=Producto)
-    async def consultar_producto(id: int) -> Producto:
+    def comprobar_duplicado(entrada: ProductoEntrada, excluir_id: int | None = None) -> None:
+        if almacen.existe_duplicado(entrada, excluir_id=excluir_id):
+            raise HTTPException(status_code=409, detail=MENSAJE_DUPLICADO)
+
+    @app.get(
+        "/productos",
+        response_model=list[Producto],
+        responses={500: RESPUESTA_500},
+    )
+    def listar_productos() -> list[Producto]:
+        # Esta práctica incluye también los no disponibles.
+        return almacen.listar()
+
+    @app.get(
+        "/productos/{id}",
+        response_model=Producto,
+        responses={404: RESPUESTA_404, 422: RESPUESTA_422, 500: RESPUESTA_500},
+    )
+    def consultar_producto(id: int) -> Producto:
         return buscar_producto(id)
 
-    @app.post("/productos", response_model=Producto, status_code=status.HTTP_201_CREATED)
-    async def crear_producto(entrada: ProductoEntrada) -> Producto:
+    @app.post(
+        "/productos",
+        response_model=Producto,
+        status_code=status.HTTP_201_CREATED,
+        responses={400: RESPUESTA_400, 409: RESPUESTA_409, 422: RESPUESTA_422, 500: RESPUESTA_500},
+    )
+    def crear_producto(entrada: ProductoEntrada) -> Producto:
         comprobar_duplicado(entrada)
-        producto = producto_con_id(entrada, generar_id())
-        productos[producto.id] = producto
-        return producto
+        try:
+            return almacen.crear(entrada)
+        except ProductoDuplicado:
+            raise HTTPException(status_code=409, detail=MENSAJE_DUPLICADO) from None
 
-    @app.put("/productos/{id}", response_model=Producto)
-    async def reemplazar_producto(id: int, entrada: ProductoEntrada) -> Producto:
+    @app.put(
+        "/productos/{id}",
+        response_model=Producto,
+        responses={
+            400: RESPUESTA_400,
+            404: RESPUESTA_404,
+            409: RESPUESTA_409,
+            422: RESPUESTA_422,
+            500: RESPUESTA_500,
+        },
+    )
+    def reemplazar_producto(id: int, entrada: ProductoEntrada) -> Producto:
         buscar_producto(id)
         comprobar_duplicado(entrada, excluir_id=id)
-        producto = producto_con_id(entrada, id)
-        productos[id] = producto
+        try:
+            producto = almacen.reemplazar(id, entrada)
+        except ProductoDuplicado:
+            raise HTTPException(status_code=409, detail=MENSAJE_DUPLICADO) from None
+        if producto is None:
+            raise HTTPException(status_code=404, detail=MENSAJE_NO_ENCONTRADO)
         return producto
 
-    @app.delete("/productos/{id}", status_code=status.HTTP_204_NO_CONTENT)
-    async def eliminar_producto(id: int) -> Response:
-        buscar_producto(id)
-        del productos[id]
+    @app.delete(
+        "/productos/{id}",
+        status_code=status.HTTP_204_NO_CONTENT,
+        responses={404: RESPUESTA_404, 422: RESPUESTA_422, 500: RESPUESTA_500},
+    )
+    def eliminar_producto(id: int) -> Response:
+        if not almacen.eliminar(id):
+            raise HTTPException(status_code=404, detail=MENSAJE_NO_ENCONTRADO)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     return app

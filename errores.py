@@ -1,9 +1,14 @@
 """Respuestas JSON uniformes para errores de petición y errores HTTP."""
 
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
+
+
+registrador = logging.getLogger(__name__)
 
 
 def registrar_manejadores(app: FastAPI) -> None:
@@ -27,4 +32,12 @@ def registrar_manejadores(app: FastAPI) -> None:
             status_code=exc.status_code,
             content={"error": str(exc.detail), "detalles": []},
             headers=exc.headers,
+        )
+
+    @app.exception_handler(Exception)
+    async def error_interno(request: Request, exc: Exception) -> JSONResponse:
+        registrador.exception("Error no controlado en %s", request.url.path, exc_info=exc)
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Error interno del servidor", "detalles": []},
         )

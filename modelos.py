@@ -21,7 +21,7 @@ class ProductoEntrada(BaseModel):
     disponible: StrictBool
     preparacion: Literal["frio", "caliente", "no_aplica"]
 
-    @field_validator("precio", mode="before")
+    @field_validator("precio", mode="before", json_schema_input_type=int | float)
     @classmethod
     def validar_precio(cls, valor: object) -> Decimal:
         # bool hereda de int en Python: comprobar el tipo exacto evita aceptar true.
@@ -63,3 +63,14 @@ class ProductoEntrada(BaseModel):
 
 class Producto(ProductoEntrada):
     id: Annotated[int, Field(strict=True, gt=0)]
+
+
+class DetalleError(BaseModel):
+    campo: list[str | int]
+    mensaje: str
+    tipo: str
+
+
+class RespuestaError(BaseModel):
+    error: str
+    detalles: list[DetalleError]
