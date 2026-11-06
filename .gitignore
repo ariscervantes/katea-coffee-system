@@ -4,5 +4,8 @@ __pycache__/
 .pytest_cache/
 
 # Evidencias individuales.
-reporte_U3S2_*.txt
+reporte_U3S*.txt
 evidencias/
+
+#secretos
+.env
