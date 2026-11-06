@@ -9,3 +9,6 @@ evidencias/
 
 #secretos
 .env
+
+# Estado entre ejecuciones de la prueba de persistencia.
+.persistencia_U3S3_*.json

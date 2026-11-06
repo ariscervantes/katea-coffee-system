@@ -6,17 +6,7 @@ import httpx
 import pytest
 
 from main import crear_app
-from memoria import productos
 from test_base_api import datos_validos
-
-
-@pytest.fixture(autouse=True)
-def aislar_memoria():
-    anteriores = dict(productos)
-    productos.clear()
-    yield
-    productos.clear()
-    productos.update(anteriores)
 
 
 def cliente():
@@ -42,7 +32,7 @@ def error(respuesta, codigo):
     ("foto.jpg", True), ("/img/foto.jpeg", True),
     ("https://ejemplo.com/foto.png", True), ("/img/café.webp", True),
 ])
-def test_imagen_post_y_put(imagen, valida):
+def test_imagen_post_y_put(imagen, valida, repositorio_prueba):
     async def comprobar():
         async with cliente() as c:
             entrada = datos_validos() | {"imagen_url": imagen}
@@ -55,7 +45,7 @@ def test_imagen_post_y_put(imagen, valida):
                 assert actualizado.json()["imagen_url"] == imagen
             else:
                 error(r, 422)
-                assert not productos
+                assert not repositorio_prueba.listar()
                 valido = await c.post("/productos", json=datos_validos())
                 ruta = f'/productos/{valido.json()["id"]}'
                 error(await c.put(ruta, json=entrada), 422)

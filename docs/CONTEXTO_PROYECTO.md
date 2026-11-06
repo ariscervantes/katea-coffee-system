@@ -1,92 +1,38 @@
-# Contexto del proyecto Katea
-
-Documento de continuidad para conversaciones nuevas y para el equipo. Última revisión local: 2026-11-04. No sustituye la revisión del código, Git y las instrucciones vigentes de la clase. Los datos del equipo y de la actividad provienen del documento aportado; no se han cotejado con Classroom.
+# Contexto de Katea — actualizado 2026-11-06
 
 ## Proyecto y equipo
 
-- **Nombre:** Katea — menú digital y pedidos para cafetería.
-- **Asignatura:** Programación Distribuida, Universidad de Colima.
-- **Repositorio:** https://github.com/ariscervantes/katea-coffee-system
-- **Integrantes:** Arisbeth Cervantes (20204413), Diego Verduzco (20205116) y Lorenzo Chávez (20209634).
-- **Modo de trabajo preferido:** explicaciones claras, acompañamiento por etapas y aprendizaje activo. Usar Codex dentro del proyecto local. No hacer commit, push ni abrir pull requests hasta que Aris lo indique.
+Katea es un proyecto académico de cafetería, Programación Distribuida, Universidad de Colima. Equipo: Arisbeth Cervantes (20204413), Diego Verduzco (20205116) y Lorenzo Chávez (20209634). Repositorio: https://github.com/ariscervantes/katea-coffee-system.
 
-## Objetivo y alcance futuro
+Trabajo por etapas, con explicaciones claras. No hacer commit ni push hasta indicación expresa. No mostrar contraseñas ni contenido de .env. Conservar la matrícula local de Aris y revisar su diff antes de cualquier commit.
 
-El cliente consulta un menú digital, selecciona productos y confirma una orden. Recibe un QR asociado a su pedido; en caja, el personal lo escanea para recuperar los productos y el total, y registrar el pago. A futuro habrá administración del menú y login para el personal. No se ha implementado ni validado aquí la solución completa.
+## Estado real de integración
 
-## Actividad actual: Unidad III, sesión 2
+- Rama local `persistencia-y-contrato`, siguiendo `origin/persistencia-y-contrato`, base e2a79f7 de Diego. El CRUD anterior está integrado en origin/main mediante PR #1, commit 946ac53. No se creó actividad/persistencia-katea.
+- Se aprovecharon basedatos.py, repositorio.py y sql/esquema.sql de Diego sin modificarlos. Se integraron main.py, modelos.py y errores.py exclusivamente desde Aris.zip. No se usó Lorenzo.zip.
+- Se mantienen MySQL, PyMySQL y consultas con %s y valores separados; no se usa mysql-connector-python ni marcadores ?. La API inicializa la tabla al arrancar, abre una conexión por operación y hace commit/rollback y cierre.
+- Modelo de error documentado y precio de entrada anunciado como número en OpenAPI. Se mantienen las reglas del CRUD, incluido strip/casefold para duplicados. El precio conserva la lectura JSON normal previa a Decimal; no se corrigió precisión arbitraria fuera del alcance.
+- Se conserva probar_api.py (11 verificaciones, SHA256 b257b622dbe127c35db8f419fdce3e1b1cd0755e0912d09a0d6cfcfafe80b5dd). Se agregó probar_api_U3S3.py (15), idéntico al ZIP de Aris. prueba.json añade openapi en la configuración compartida; la matrícula 20204413 se conserva como cambio local fuera del commit.
+- Las pruebas propias usan un repositorio aislado e inyectado; no importan memoria.py. Se retiró la prueba del generador en memoria y se añadió contrato y ciclo de vida. Último resultado: 90 aprobadas en 1.04 s, sin advertencias; pip check correcto.
 
-1. Revisar la ficha original y los códigos de respuesta.
-2. Resolver individualmente los ejercicios de filtros y detección de bugs.
-3. Acordar antes de programar las reglas de un recurso: productos.
-4. Implementar cinco endpoints: GET /productos, GET /productos/{id}, POST /productos, PUT /productos/{id} y DELETE /productos/{id}. Almacenar datos en memoria; la base de datos se abordará después.
-5. Usar errores con formato {"error": "...", "detalles": [...]}; seguir la guía de clase sobre 400, 404, 409 y 422.
-6. Adaptar `prueba.json`, configurar la matrícula individual y ejecutar `python probar_api.py` con la API en marcha; objetivo: 11 de 11, ya obtenido por Aris y nuevamente en la verificación aislada del asistente. Revisar también las reglas de validación y 409, que no están todas cubiertas por ese script.
-7. Trabajar en una rama y abrir un pull request que describa qué cambia y cómo se probó, incluyendo la línea RESULTADO. Otro integrante debe revisarlo según la lista de la diapositiva 18.
-8. Completar las evidencias y reflexión de la actividad. Cada integrante entrega su propio PDF, con reporte y captura reales.
+## MySQL dedicado autorizado por Aris
 
-## Reglas de productos acordadas para la práctica
+- compose.yaml crea el proyecto katea, contenedor katea-mysql-1, imagen mysql:8.0 (servidor comprobado 8.0.46), volumen katea_mysql_data y puerto 127.0.0.1:13306.
+- Base katea y usuario propio katea_app. Credenciales aleatorias guardadas en .env con permisos 600 e ignoradas por Git; .env.example solo contiene plantilla. No se modificaron los contenedores preexistentes.
+- MySQL permanece activo. La API temporal de verificación en 127.0.0.1:18000 fue detenida.
 
-La API genera el id. El cliente no lo proporciona al crear.
+## Resultados comprobados
 
-- **nombre:** texto obligatorio de 2 a 80 caracteres tras quitar espacios al inicio y al final.
-- **descripcion:** texto obligatorio de 5 a 200 caracteres tras quitar espacios al inicio y al final.
-- **precio:** número obligatorio mayor que cero, con máximo dos decimales, sin aceptar textos ni booleanos. Se conserva la validación original int/float a Decimal y se permiten ceros finales: 25.000 equivale a 25 y 25.120 a 25.12. No se preserva precisión decimal desde la lectura JSON; los casos de alta precisión reportados pueden redondearse antes de validar. Esa corrección quedó fuera del alcance por decisión de Aris.
-- **imagen_url:** texto obligatorio no vacío que termina literalmente en .jpg, .jpeg, .png o .webp. Debe tener nombre no vacío antes de la extensión en el último segmento de la ruta y no contener saltos de línea CR/LF. Se conserva el rechazo original de extensiones mayúsculas y parámetros después de la extensión. No se descarga ni comprueba existencia, contenido o validez completa de la URL.
-- **disponible:** booleano obligatorio; aceptar true o false y rechazar cadenas y números.
-- **preparacion:** texto obligatorio: frio, caliente o no_aplica.
+Ejecución del asistente el 2026-11-06 con matrícula 20204413, sin atribuirla a Aris:
 
-**Conflicto 409:** no permitir dos registros con la misma combinación de nombre y preparación. Comparar nombres sin distinguir mayúsculas/minúsculas y quitando espacios al inicio y final. En PUT, excluir el mismo producto al comprobar el conflicto: puede conservar su combinación, pero no adoptar la de otro producto. Repetir el mismo PUT debe mantener los datos.
+- Primera ronda U3S3: 14/15, persistencia pendiente.
+- Se detuvo el proceso de API PID 50176 y se inició otro PID 50204. MySQL permaneció activo. Se comprobó directamente en SQL la existencia del registro de control tras el reinicio.
+- Segunda ronda: 15/15. Línea real: U3S3;20204413;http://127.0.0.1:18000/productos;111111111111111;E3B12A3F.
+- Se comprobaron además datos con comillas y SQL aparente guardados literalmente, recuperación de DECIMAL y booleanos, restricción única, reemplazo repetido, conflicto al reemplazar y rollback. Los registros adicionales fueron eliminados.
+- Evidencias separadas: evidencias/20204413/20261106-151600-persistencia-mysql/. Incluyen ambos reportes, configuración temporal, registros de API, constancia del reinicio y comprobación SQL. No se generaron capturas. No se sobrescribió evidencia de U3S2.
 
-Ejemplo válido:
+## Pendientes
 
-```json
-{
-  "nombre": "Matcha latte",
-  "descripcion": "Bebida de té matcha con leche.",
-  "precio": 65.00,
-  "imagen_url": "/imagenes/matcha-latte.jpg",
-  "disponible": true,
-  "preparacion": "frio"
-}
-```
+Aris autorizó revisar, preparar, hacer commit y push en esta rama compartida, conservando su matrícula fuera del commit. No abrir ni aprobar el PR hasta indicación expresa. Las evidencias están ignoradas: respaldarlas fuera del repositorio si se necesitan para entrega. Aris confirmó su segunda corrida personal tras reiniciar la API: 15/15. Se revisó el reporte local evidencias/20204413/reporte-ronda-2.txt, con base en el puerto 8000; no se versiona ese archivo.
 
-Implementado para esta práctica: GET /productos incluye disponibles y no disponibles. El filtro del menú público se definirá después. El login y los permisos 401/403 son futuros; no están implementados.
-
-Códigos requeridos: 400 para JSON mal formado, 422 para datos inválidos, 404 para producto solicitado no encontrado, 409 para conflicto nombre/preparación, 201 al crear, 200 al consultar o reemplazar y 204 al eliminar, sin cuerpo. PUT reemplaza todos los campos obligatorios.
-
-## Estado de la corrección local (2026-11-04)
-
-- Al comenzar, el único cambio local era la matrícula de `prueba.json`: de `20205116` a `20204413`. Se conserva intacto. No se consultó el remoto ni se creó commit, push, aprobación o merge.
-- CRUD en memoria de un solo proceso. Los datos e IDs se pierden al reiniciar. No hay base de datos, login, pedidos, pagos, QR ni interfaz visual.
-- Se retiraron `rutas.py`, su registro en `main.py`, la aceptación de Decimal como entrada y las pruebas exclusivas de precisión. `main.py` vuelve a coincidir con la versión previa a la revisión. El Decimal interno y el serializador originales se conservan.
-- La corrección de imagen se limita a extensión literal, nombre de archivo no vacío y rechazo de CR/LF. Se retiraron urlsplit, decodificación porcentual, restricciones de esquema/host y aceptación de mayúsculas o parámetros.
-- Continúan los campos obligatorios y el rechazo de campos extra, incluido id. Nombre y descripción se recortan. Disponible usa StrictBool; preparación tiene tres valores. Los duplicados comparan nombre con strip/casefold y preparación; PUT excluye el propio ID.
-
-### Verificación real de esta corrección
-
-- `.venv/bin/python -m pytest -q -p no:cacheprovider`, con bytecode desactivado, tras reducir el alcance: **90 passed in 0.86s**. Se conservan las pruebas originales, se añaden casos de imagen en modelo y POST/PUT, y se conserva la regresión general de errores, duplicados, CRUD y PUT repetido, que no depende de la corrección de precisión. Los errores comprobados usan 400/404/409/422 y formato uniforme; no se observaron respuestas 500.
-- Aris había ejecutado personalmente `probar_api.py` con matrícula `20204413`: **11 de 11**. Ese resultado es previo y pertenece a su ejecución.
-- En la revisión anterior, antes de reducir el alcance, el asistente ejecutó nuevamente el script original contra Uvicorn aislado en `http://127.0.0.1:37383`: **RESULTADO: 11 de 11**, salida 0. Se utilizó una copia temporal de `prueba.json` con solo la base cambiada al puerto temporal y conservando la matrícula. La instancia se detuvo al terminar. No se tocó el servidor habitual ni se sobrescribió la evidencia anterior.
-- Reporte de esa ejecución anterior (no se repitió el script tras reducir el alcance): `/tmp/katea-revision-nonbaek8/reporte_U3S2_20204413.txt`. Es temporal; respaldarlo si se desea conservar como evidencia. No se generaron capturas.
-- SHA-256 de `probar_api.py`, sin cambios: `b257b622dbe127c35db8f419fdce3e1b1cd0755e0912d09a0d6cfcfafe80b5dd`.
-- SHA-256 de `prueba.json`, conservado: `6d9ee5bb115002ddbb2d5fe4c1548134ecfb95019c946485f9d1d11f994a7549`.
-
-## Pendientes y límites
-
-- Revisar el diff antes de autorizar cualquier commit, push, aprobación o merge. No se ha verificado el estado remoto del PR.
-- Conservar evidencias personales reales y respaldarlas; no atribuir la ejecución del asistente a Aris. Git ignora reportes y `evidencias/`, pero no la matrícula local en `prueba.json`.
-- El documento original menciona `Ficha_original_Katea.md`, que no se localizó en el repositorio. Las reglas usadas aquí son las indicadas y aclaradas por Aris en la conversación.
-- El almacenamiento sigue siendo temporal y de un solo proceso. Las pruebas cubren los casos descritos, sin afirmar ausencia de fallos para cualquier entrada posible.
-- Falta completar la revisión humana y las evidencias/reflexión de la actividad. No inventar resultados ni capturas.
-
-## Mantenimiento de la documentación
-
-- Al terminar cada incremento, revisar primero código y Git. Actualizar este documento con lo implementado, decisiones relevantes, pruebas realmente ejecutadas y resultados, y pendientes.
-- Corregir información desactualizada; no acumular transcripciones de conversaciones.
-- README.md es la guía de presentación, instalación y uso. Revisarlo cuando cambien instalación, ejecución o pruebas. Este documento sirve para continuidad con el equipo y asistentes de IA.
-- No hacer commit, push ni abrir pull request sin indicación expresa de Aris; las tareas de entrega descritas arriba son pendientes, no autorizaciones.
-
-## Prompt para retomar
-
-«Lee este archivo como contexto de Katea y revisa el estado actual de los archivos y Git antes de proponer cambios. Dime qué está hecho y qué falta respecto de la actividad vigente. Guíame por etapas y explícame lo que hagamos para que pueda aprender y presentar mi trabajo. No hagas commit, push ni abras un pull request sin que te lo indique.»
+README describe la instalación, operaciones y ejecución. No hay contratos exportados ni scripts de exportación adicionales. Pedidos, pagos, QR, login y frontend siguen fuera del alcance. Las pruebas cubren los casos ejecutados; no garantizan cualquier entrada posible. El esquema DECIMAL tiene un límite finito y el precio del modelo no declara un máximo; no se amplió esta actividad para cambiar esa regla.

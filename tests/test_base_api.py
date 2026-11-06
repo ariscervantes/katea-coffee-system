@@ -8,7 +8,6 @@ import pytest
 from pydantic import ValidationError
 
 from main import app, crear_app
-from memoria import generar_id, productos
 from modelos import ProductoEntrada
 
 
@@ -74,13 +73,6 @@ def test_opciones_validas(extension, preparacion, disponible):
         "preparacion": preparacion, "disponible": disponible,
     })
     ProductoEntrada.model_validate(datos_validos() | {"nombre": "a" * 80, "descripcion": "a" * 200})
-
-
-def test_memoria_e_ids():
-    antes = dict(productos)
-    primero, segundo = generar_id(), generar_id()
-    assert segundo == primero + 1
-    assert productos == antes  # Generar un id no guarda datos.
 
 
 def test_estan_registradas_las_cinco_operaciones_de_productos():
