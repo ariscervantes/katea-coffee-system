@@ -91,8 +91,22 @@ def test_estan_registradas_las_cinco_operaciones_de_productos():
     }
 
 
-def test_errores_http():
-    temporal = crear_app()
+def test_contrato_documenta_los_codigos_http():
+    operaciones = app.openapi()["paths"]
+    esperados = {
+        ("get", "/productos"): {200, 500},
+        ("get", "/productos/{id}"): {200, 404, 422, 500},
+        ("post", "/productos"): {201, 400, 409, 422, 500},
+        ("put", "/productos/{id}"): {200, 400, 404, 409, 422, 500},
+        ("delete", "/productos/{id}"): {204, 404, 422, 500},
+    }
+    for (metodo, ruta), codigos in esperados.items():
+        documentados = {int(codigo) for codigo in operaciones[ruta][metodo]["responses"]}
+        assert codigos <= documentados
+
+
+def test_errores_http(repositorio_falso):
+    temporal = crear_app(repositorio_falso)
 
     @temporal.post("/validar")
     async def validar(producto: ProductoEntrada):
