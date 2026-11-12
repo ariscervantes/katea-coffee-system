@@ -12,3 +12,9 @@ evidencias/
 
 # Estado entre ejecuciones de la prueba de persistencia.
 .persistencia_U3S3_*.json
+
+# Estado entre ejecuciones de la actividad de autenticación.
+.persistencia_U3S4_*.json
+
+# Configuración U3S4 personal: matrícula y claves locales.
+prueba_U3S4.local.json

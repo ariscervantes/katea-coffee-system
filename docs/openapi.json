@@ -5,6 +5,359 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/pedidos": {
+      "get": {
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Listar",
+        "description": "Cliente: solo propios. Admin: todos.",
+        "operationId": "listar_pedidos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Pedido"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Pedidos Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta un token válido o ha vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerJWT": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Crear",
+        "description": "El dueño se obtiene del token; precios y total se calculan en una transacción. Estado inicial pendiente.",
+        "operationId": "crear_pedidos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedidoEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pedido"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta un token válido o ha vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON mal formado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Algún producto no está disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Lista vacía, datos inválidos, producto inexistente, campos extra, producto repetido o importe fuera de rango",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerJWT": []
+          }
+        ]
+      }
+    },
+    "/pedidos/{id}": {
+      "get": {
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Consultar",
+        "operationId": "consultar_pedidos__id__get",
+        "security": [
+          {
+            "BearerJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pedido"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta un token válido o ha vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pedido inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ID inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Eliminar",
+        "operationId": "eliminar_pedidos__id__delete",
+        "security": [
+          {
+            "BearerJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Falta un token válido o ha vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pedido inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ID inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Login",
+        "description": "Recibe credenciales JSON y devuelve un JWT válido durante 30 minutos.",
+        "operationId": "login_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credenciales"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sesion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON mal formado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Usuario o clave incorrectos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos o parámetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/productos": {
       "get": {
         "summary": "Listar Productos",
@@ -70,6 +423,26 @@
               }
             }
           },
+          "401": {
+            "description": "Falta un token válido o ha vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Se requiere rol admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Nombre y preparación duplicados",
             "content": {
@@ -100,7 +473,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "BearerJWT": []
+          }
+        ]
       }
     },
     "/productos/{id}": {
@@ -164,6 +542,11 @@
       "put": {
         "summary": "Reemplazar Producto",
         "operationId": "reemplazar_producto_productos__id__put",
+        "security": [
+          {
+            "BearerJWT": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -198,6 +581,26 @@
           },
           "400": {
             "description": "JSON mal formado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta un token válido o ha vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Se requiere rol admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -251,6 +654,11 @@
       "delete": {
         "summary": "Eliminar Producto",
         "operationId": "eliminar_producto_productos__id__delete",
+        "security": [
+          {
+            "BearerJWT": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -266,8 +674,38 @@
           "204": {
             "description": "Successful Response"
           },
+          "401": {
+            "description": "Falta un token válido o ha vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Se requiere rol admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Producto no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Producto asociado a un pedido",
             "content": {
               "application/json": {
                 "schema": {
@@ -302,6 +740,29 @@
   },
   "components": {
     "schemas": {
+      "Credenciales": {
+        "properties": {
+          "usuario": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Usuario"
+          },
+          "clave": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Clave"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "usuario",
+          "clave"
+        ],
+        "title": "Credenciales"
+      },
       "DetalleError": {
         "properties": {
           "campo": {
@@ -334,6 +795,95 @@
           "tipo"
         ],
         "title": "DetalleError"
+      },
+      "DetallePedido": {
+        "properties": {
+          "producto_id": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Producto Id"
+          },
+          "cantidad": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Cantidad"
+          },
+          "precio_unitario": {
+            "type": "string",
+            "title": "Precio Unitario",
+            "description": "Precio de compra; texto decimal exacto con dos decimales"
+          }
+        },
+        "type": "object",
+        "required": [
+          "producto_id",
+          "cantidad",
+          "precio_unitario"
+        ],
+        "title": "DetallePedido"
+      },
+      "Pedido": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Id"
+          },
+          "usuario_id": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Usuario Id",
+            "description": "Dueño obtenido del token, no del cuerpo"
+          },
+          "estado": {
+            "type": "string",
+            "const": "pendiente",
+            "title": "Estado"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total",
+            "description": "Suma exacta de cantidad por precio unitario; texto con dos decimales"
+          },
+          "productos": {
+            "items": {
+              "$ref": "#/components/schemas/DetallePedido"
+            },
+            "type": "array",
+            "title": "Productos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "usuario_id",
+          "estado",
+          "total",
+          "productos"
+        ],
+        "title": "Pedido"
+      },
+      "PedidoEntrada": {
+        "properties": {
+          "productos": {
+            "items": {
+              "$ref": "#/components/schemas/ProductoPedidoEntrada"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Productos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "productos"
+        ],
+        "title": "PedidoEntrada"
       },
       "Producto": {
         "properties": {
@@ -453,6 +1003,29 @@
         ],
         "title": "ProductoEntrada"
       },
+      "ProductoPedidoEntrada": {
+        "properties": {
+          "producto_id": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Producto Id"
+          },
+          "cantidad": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Cantidad"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "producto_id",
+          "cantidad"
+        ],
+        "title": "ProductoPedidoEntrada"
+      },
       "RespuestaError": {
         "properties": {
           "error": {
@@ -473,6 +1046,32 @@
           "detalles"
         ],
         "title": "RespuestaError"
+      },
+      "Sesion": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "const": "bearer",
+            "title": "Token Type",
+            "default": "bearer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token"
+        ],
+        "title": "Sesion"
+      }
+    },
+    "securitySchemes": {
+      "BearerJWT": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
       }
     }
   }

@@ -1,101 +1,114 @@
-# Contexto del proyecto Katea
+# Contexto de Katea — actualizado 2026-11-11
 
-Documento de continuidad para conversaciones nuevas y para el equipo. Última revisión local: 2026-11-04. No sustituye la revisión del código, Git y las instrucciones vigentes de la clase. Los datos del equipo y de la actividad provienen del documento aportado; no se han cotejado con Classroom.
+## Proyecto y trabajo en equipo
 
-## Proyecto y equipo
+Katea es un menú digital y sistema de pedidos académico. Equipo: Arisbeth
+Cervantes, Diego Verduzco y Lorenzo Chávez. Repositorio:
+https://github.com/ariscervantes/katea-coffee-system.
 
-- **Nombre:** Katea — menú digital y pedidos para cafetería.
-- **Asignatura:** Programación Distribuida, Universidad de Colima.
-- **Repositorio:** https://github.com/ariscervantes/katea-coffee-system
-- **Integrantes:** Arisbeth Cervantes (20204413), Diego Verduzco (20205116) y Lorenzo Chávez (20209634).
-- **Modo de trabajo preferido:** explicaciones claras, acompañamiento por etapas y aprendizaje activo. Usar Codex dentro del proyecto local. No hacer commit, push ni abrir pull requests hasta que Aris lo indique.
+Trabajar por etapas y revisar Git antes de cambiar archivos. No mostrar .env,
+claves, hashes privados ni tokens. Mantener la matrícula/configuración personal
+y evidencias fuera de los commits. Usar la identidad Git existente, sin agregar
+autores ni coautores. Commit y push de login-y-roles están autorizados para esta
+revisión; no abrir, aprobar ni fusionar el PR todavía.
 
-## Objetivo y alcance futuro
+## Base y alcance
 
-El cliente consulta un menú digital, selecciona productos y confirma una orden. Recibe un QR asociado a su pedido; en caja, el personal lo escanea para recuperar los productos y el total, y registrar el pago. A futuro habrá administración del menú y login para el personal. No se ha implementado ni validado aquí la solución completa.
+Rama login-y-roles basada en main 0b09d9a. El PR #2 de persistencia y contrato
+está integrado. Antes de publicar se consultaron las referencias de origin:
+main seguía en esa base y no existía login-y-roles remoto. Comprobar el estado
+actual de Git: este registro no sustituye una consulta nueva.
 
-## Actividad actual: Unidad III, sesión 2
+FastAPI/Pydantic, MySQL 8, PyMySQL; SQL parametrizado con %s. CRUD de productos,
+usuarios con bcrypt y roles admin/cliente, login JSON, JWT HS256 con expiración
+de 30 minutos y pedidos persistentes con control de dueño. No hay QR, pagos,
+caja, registro público ni edición de usuarios.
 
-1. Revisar la ficha original y los códigos de respuesta.
-2. Resolver individualmente los ejercicios de filtros y detección de bugs.
-3. Acordar antes de programar las reglas de un recurso: productos.
-4. Implementar cinco endpoints: GET /productos, GET /productos/{id}, POST /productos, PUT /productos/{id} y DELETE /productos/{id}. Almacenar los datos en MySQL.
-5. Usar errores con formato {"error": "...", "detalles": [...]}; seguir la guía de clase sobre 400, 404, 409 y 422.
-6. Adaptar `prueba.json`, configurar la matrícula individual y ejecutar `python probar_api.py` con la API en marcha; objetivo: 11 de 11, ya obtenido por Aris y nuevamente en la verificación aislada del asistente. Revisar también las reglas de validación y 409, que no están todas cubiertas por ese script.
-7. Trabajar en una rama y abrir un pull request que describa qué cambia y cómo se probó, incluyendo la línea RESULTADO. Otro integrante debe revisarlo según la lista de la diapositiva 18.
-8. Completar las evidencias y reflexión de la actividad. Cada integrante entrega su propio PDF, con reporte y captura reales.
+## Implementación y decisiones
 
-## Reglas de productos acordadas para la práctica
+- main.py crea la app con repositorios inyectables; al iniciar crea tablas
+  ausentes en orden: productos, usuarios, pedidos y detalles. No crea cuentas.
+- basedatos.py obtiene configuración de entorno/.env y administra conexión,
+  commit, rollback y cierre. La base MySQL debe existir antes de arrancar.
+- autenticacion.py exige sub, rol, iat y exp, firma válida y algoritmo HS256.
+  JWT_SECRETO debe ser aleatorio y tener al menos 32 bytes, sin valor por defecto.
+  Login JSON con usuario/clave devuelve access_token/token_type; credenciales
+  incorrectas producen el mismo 401 sin exponer clave ni hash.
+- Usuarios: ID autoincremental, nombre único sensible a mayúsculas, hash bcrypt
+  y rol. bcrypt 5.0.0 directo, costo 12 y sal aleatoria; claves nuevas de 8–72
+  bytes UTF-8 sin truncar. PyJWT 2.15.0; comprobado en Python 3.14.4.
+- GET de productos públicos; POST/PUT/DELETE requieren exigir_admin, que depende
+  de usuario_actual. 401 para token ausente/inválido/vencido; 403 para cliente.
+- Pedidos exige sesión. Dueño desde identidad; se rechaza si viene en el cuerpo.
+  Cliente lista/consulta/elimina solo propios mediante WHERE usuario_id = %s;
+  admin usa métodos globales explícitos. Ajeno e inexistente dan el mismo 404.
+- Entrada: productos no vacíos con producto_id y cantidad enteros estrictos
+  positivos hasta 4294967295; sin repetidos, precios, total, estado ni extras.
+  Lista/cantidad inválidas y producto inexistente en cuerpo dan 422; producto
+  no disponible da 409.
+- Crear pedido bloquea productos con FOR UPDATE en orden de ID, toma sus precios,
+  calcula con Decimal precisión 90 y comprueba DECIMAL(65,2). Guarda cabecera y
+  detalles en una transacción con estado pendiente y precios históricos.
+  Importes JSON de pedidos son textos con dos decimales; productos sigue numérico.
+- FK usuario→pedido RESTRICT, producto→detalle RESTRICT y pedido→detalle CASCADE.
+  DELETE de producto referenciado da 409 (MySQL 1451); no borra pedidos.
+- Productos conserva validaciones y normalización previas de README. No se
+  amplió la precisión arbitraria de lectura JSON ni cambió la validación de imagen.
+- OpenAPI documenta Bearer/Authorize, éxitos y errores uniformes RespuestaError.
+  Exportar con scripts/generar_contrato.py; no necesita iniciar servicios.
 
-La API genera el id. El cliente no lo proporciona al crear.
+## Preparación para cada integrante
 
-- **nombre:** texto obligatorio de 2 a 80 caracteres tras quitar espacios al inicio y al final.
-- **descripcion:** texto obligatorio de 5 a 200 caracteres tras quitar espacios al inicio y al final.
-- **precio:** número obligatorio mayor que cero, con máximo dos decimales, sin aceptar textos ni booleanos. Se conserva la validación original int/float a Decimal y se permiten ceros finales: 25.000 equivale a 25 y 25.120 a 25.12. No se preserva precisión decimal desde la lectura JSON; los casos de alta precisión reportados pueden redondearse antes de validar. Esa corrección quedó fuera del alcance por decisión de Aris.
-- **imagen_url:** texto obligatorio no vacío que termina literalmente en .jpg, .jpeg, .png o .webp. Debe tener nombre no vacío antes de la extensión en el último segmento de la ruta y no contener saltos de línea CR/LF. Se conserva el rechazo original de extensiones mayúsculas y parámetros después de la extensión. No se descarga ni comprueba existencia, contenido o validez completa de la URL.
-- **disponible:** booleano obligatorio; aceptar true o false y rechazar cadenas y números.
-- **preparacion:** texto obligatorio: frio, caliente o no_aplica.
+Seguir docs/U3S4.md: entorno virtual y .env privado, MySQL propio, semilla manual
+scripts/crear_usuarios_desarrollo.py con KATEA_ENTORNO=desarrollo, API en terminal,
+producto soporte disponible y copia privada prueba_U3S4.local.json con matrícula
+propia y las tres cuentas. No sobrescribir prueba.json personal.
 
-**Conflicto 409:** no permitir dos registros con la misma combinación de nombre y preparación. Comparar nombres sin distinguir mayúsculas/minúsculas y quitando espacios al inicio y final. En PUT, excluir el mismo producto al comprobar el conflicto: puede conservar su combinación, pero no adoptar la de otro producto. Repetir el mismo PUT debe mantener los datos.
+probar_api_U3S4.py es copia byte por byte del script versión 3 del profesor:
+SHA-256 929ce89653d01c8cb18b506e6f5241a76b91344be83e987e1a51ac190eb738c5.
+Se comprobó contra el original de Downloads y clase-s4.zip. Acepta la ruta de
+configuración en sys.argv[1]. Los scripts anteriores se conservan sin cambios.
 
-Ejemplo válido:
+La prueba 20 necesita producto disponible previo, distinto de los registros CRUD
+del script. Conservar su ID, base, configuración, cwd y estado entre corridas;
+respaldar salida y reporte antes de repetir, reiniciando solo la API. El script
+no demuestra por sí mismo que se haya reiniciado el proceso.
 
-```json
-{
-  "nombre": "Matcha latte",
-  "descripcion": "Bebida de té matcha con leche.",
-  "precio": 65.00,
-  "imagen_url": "/imagenes/matcha-latte.jpg",
-  "disponible": true,
-  "preparacion": "frio"
-}
-```
+.env, prueba_U3S4.local.json, entorno virtual, evidencias/reportes y estado de
+persistencia U3S3/U3S4 están ignorados. No versionar contraseñas ni resultados
+personales. La plantilla compartida tiene únicamente marcadores de configuración.
 
-Implementado para esta práctica: GET /productos incluye disponibles y no disponibles. El filtro del menú público se definirá después. El login y los permisos 401/403 son futuros; no están implementados.
+## Resultados previos registrados
 
-Códigos requeridos: 400 para JSON mal formado, 422 para datos inválidos, 404 para producto solicitado no encontrado, 409 para conflicto nombre/preparación, 201 al crear, 200 al consultar o reemplazar y 204 al eliminar, sin cuerpo. PUT reemplaza todos los campos obligatorios.
+- Suite propia: 202 aprobadas en la integración previa. Las pruebas aíslan HTTP
+  y SQL en memoria; no conectan a MySQL real ni prueban su bloqueo concurrente.
+- Integración previa MySQL 8.0.46 en contenedor/base/volumen nuevos y exclusivos,
+  sin modificar la base habitual. Cuatro tablas InnoDB y tres FK comprobadas.
+- Login y hashes, permisos de productos, propiedad y admin en pedidos, DECIMAL
+  exacto/histórico, 422 para referencia inexistente en cuerpo y 409 de conflicto.
+  RESTRICT de producto/usuario y CASCADE de detalles verificados.
+- Un trigger temporal falló en el segundo detalle: 500 genérico y rollback real
+  sin cabecera ni detalles incompletos. El trigger se retiró después.
+- U3S4: 19/20 primero con persistencia pendiente; 20/20 tras reiniciar solo API.
+  Se comprobaron PIDs distintos y registro de control en SQL, conservando MySQL,
+  producto soporte y hashes de configuración/estado. Evidencias personales ignoradas.
 
-## Estado de la corrección local (2026-11-04)
+Estos resultados son históricos; no atribuirlos a una nueva ejecución de otro
+integrante. Consultar la salida realmente obtenida en cada revisión. La API y
+contenedores de pruebas pueden haber cambiado de estado: no asumir que estén
+activos ni compartir sus credenciales.
 
-- Al comenzar, el único cambio local era la matrícula de `prueba.json`: de `20205116` a `20204413`. Se conserva intacto. No se consultó el remoto ni se creó commit, push, aprobación o merge.
-- CRUD con almacenamiento en MySQL. La tabla se crea al iniciar si no existe y los datos e IDs se conservan al reiniciar. No hay login, pedidos, pagos, QR ni interfaz visual.
-- Se retiraron `rutas.py`, su registro en `main.py`, la aceptación de Decimal como entrada y las pruebas exclusivas de precisión. `main.py` vuelve a coincidir con la versión previa a la revisión. El Decimal interno y el serializador originales se conservan.
-- La corrección de imagen se limita a extensión literal, nombre de archivo no vacío y rechazo de CR/LF. Se retiraron urlsplit, decodificación porcentual, restricciones de esquema/host y aceptación de mayúsculas o parámetros.
-- Continúan los campos obligatorios y el rechazo de campos extra, incluido id. Nombre y descripción se recortan. Disponible usa StrictBool; preparación tiene tres valores. Los duplicados comparan nombre con strip/casefold y preparación; PUT excluye el propio ID.
+## Pendientes
 
-### Migración a MySQL (2026-11-06)
+Revisión por otro integrante y capturas personales, luego PR cuando se autorice.
+No se han hecho pruebas de carreras concurrentes/carga. No hay revocación
+anticipada de JWT: cambios de rol se reflejan al emitir un token nuevo y los ya
+emitidos conservan su vigencia. QR, pagos y caja quedan para otra actividad.
 
-- Se eliminó `memoria.py`. La tabla `productos` vive en MySQL y se crea al iniciar si no existe; el ID es `AUTO_INCREMENT`.
-- `basedatos.py` carga `.env` con `python-dotenv`, valida `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` y `DB_NAME`, y abre una conexión por operación con transacción.
-- `repositorio.py` contiene todas las consultas. Usa marcadores `%s` de MySQL y parámetros separados; no concatena datos del cliente al texto del SQL.
-- La pareja nombre/preparación tiene una restricción única en MySQL. La comparación normaliza nombre con `strip().casefold()` y se guarda en una columna con colación binaria. Si dos peticiones compiten, la base devuelve el conflicto y la API responde 409.
-- `.env.example` contiene solo datos de ejemplo. `sql/esquema.sql` permite crear la tabla manualmente.
-- Las respuestas de las cinco rutas declaran sus códigos con `responses`. El contrato exportado se genera con `python scripts/generar_contrato.py` en `docs/openapi.json`; el resumen está en `docs/CONTRATO_API.md`. Swagger UI sigue disponible en `/docs`.
+## Revisión para publicación
 
-### Verificación real de esta corrección
-
-- `.venv/bin/python -m pytest -q -p no:cacheprovider`, con bytecode desactivado, tras reducir el alcance: **90 passed**. Se conservan las pruebas originales, se añaden casos de imagen en modelo y POST/PUT, se conserva la regresión general de errores, duplicados, CRUD y PUT repetido, y se añade una comprobación de los códigos documentados en el contrato. Los errores comprobados usan 400/404/409/422 y formato uniforme; no se observaron respuestas 500. Las pruebas HTTP usan un repositorio falso inyectado; la aplicación real usa MySQL.
-- Aris había ejecutado personalmente `probar_api.py` con matrícula `20204413`: **11 de 11**. Ese resultado es previo y pertenece a su ejecución.
-- En la revisión anterior, antes de reducir el alcance, el asistente ejecutó el script original contra Uvicorn aislado en `http://127.0.0.1:37383`: **RESULTADO: 11 de 11**, salida 0. Se utilizó una copia temporal de `prueba.json` con solo la base cambiada al puerto temporal. Esa instancia se detuvo al terminar y no se sobrescribió la evidencia anterior.
-- En la verificación de la migración a MySQL, el asistente levantó MySQL 8.4 y Uvicorn en `127.0.0.1:18000` con una base temporal. `probar_api.py` obtuvo **11 de 11** y se detuvieron ambos servicios después. Se usó una copia temporal de la configuración; no se modificaron `prueba.json`, `probar_api.py` ni sus reportes. Es una ejecución del asistente, no una evidencia personal.
-- SHA-256 de `probar_api.py`, sin cambios: `b257b622dbe127c35db8f419fdce3e1b1cd0755e0912d09a0d6cfcfafe80b5dd`.
-- `prueba.json` tiene cambios locales previos de matrícula y una clave `openapi`; revisar `git diff -- prueba.json` antes de cualquier commit.
-
-## Pendientes y límites
-
-- Revisar el diff antes de autorizar cualquier commit, push, aprobación o merge. No se ha verificado el estado remoto del PR.
-- Conservar evidencias personales reales y respaldarlas; no atribuir la ejecución del asistente a Aris. Git ignora reportes y `evidencias/`, pero no la matrícula local en `prueba.json`.
-- El documento original menciona `Ficha_original_Katea.md`, que no se localizó en el repositorio. Las reglas usadas aquí son las indicadas y aclaradas por Aris en la conversación.
-- El almacenamiento usa MySQL y persiste entre reinicios. Las pruebas cubren los casos descritos, sin afirmar ausencia de fallos para cualquier entrada posible.
-- Falta completar la revisión humana y las evidencias/reflexión de la actividad. No inventar resultados ni capturas.
-
-## Mantenimiento de la documentación
-
-- Al terminar cada incremento, revisar primero código y Git. Actualizar este documento con lo implementado, decisiones relevantes, pruebas realmente ejecutadas y resultados, y pendientes.
-- Corregir información desactualizada; no acumular transcripciones de conversaciones.
-- README.md es la guía de presentación, instalación y uso. Revisarlo cuando cambien instalación, ejecución o pruebas. Este documento sirve para continuidad con el equipo y asistentes de IA.
-- No hacer commit, push ni abrir pull request sin indicación expresa de Aris; las tareas de entrega descritas arriba son pendientes, no autorizaciones.
-
-## Prompt para retomar
-
-«Lee este archivo como contexto de Katea y revisa el estado actual de los archivos y Git antes de proponer cambios. Dime qué está hecho y qué falta respecto de la actividad vigente. Guíame por etapas y explícame lo que hagamos para que pueda aprender y presentar mi trabajo. No hagas commit, push ni abras un pull request sin que te lo indique.»
+Se ejecutó nuevamente la suite propia: 202 aprobadas en 13.62 s; pip check
+correcto y git diff --check sin errores. Se comprobó el contrato exportado en la
+suite. No se repitieron las corridas U3S4 ni la integración MySQL en esta revisión;
+se conservan como resultados previos registrados. Script U3S4 contrastado contra
+original y ZIP; versiones anteriores y configuración personal intactas.

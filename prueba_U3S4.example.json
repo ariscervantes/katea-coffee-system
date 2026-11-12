@@ -1,0 +1,61 @@
+{
+  "matricula": "TU_MATRICULA_8_DIGITOS",
+  "base": "http://127.0.0.1:8000",
+  "openapi": "/openapi.json",
+  "coleccion": "/productos",
+  "campo_id": "id",
+  "valido": {
+    "nombre": "Latte",
+    "descripcion": "Cafe americano con leche",
+    "precio": 50,
+    "imagen_url": "latte.jpg",
+    "disponible": true,
+    "preparacion": "frio"
+  },
+  "invalido": {
+    "nombre": "",
+    "descripcion": "Cafe",
+    "precio": "50",
+    "imagen_url": "latte.jpg",
+    "disponible": true,
+    "preparacion": "frio"
+  },
+  "metodo_cambio": "PUT",
+  "cambio": {
+    "nombre": "Capuccino",
+    "descripcion": "Cafe espresso con leche",
+    "precio": 55,
+    "imagen_url": "capuccino.jpg",
+    "disponible": false,
+    "preparacion": "caliente"
+  },
+  "id_inexistente": "999999",
+  "encabezados": {},
+  "auth": {
+    "login": "/login",
+    "campo_token": "access_token",
+    "admin": {
+      "usuario": "dev_admin",
+      "clave": "COMPLETAR_SOLO_EN_COPIA_LOCAL"
+    },
+    "usuario": {
+      "usuario": "dev_cliente1",
+      "clave": "COMPLETAR_SOLO_EN_COPIA_LOCAL"
+    },
+    "otro": {
+      "usuario": "dev_cliente2",
+      "clave": "COMPLETAR_SOLO_EN_COPIA_LOCAL"
+    }
+  },
+  "propio": {
+    "coleccion": "/pedidos",
+    "valido": {
+      "productos": [
+        {
+          "producto_id": 1,
+          "cantidad": 1
+        }
+      ]
+    }
+  }
+}

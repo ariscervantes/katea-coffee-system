@@ -77,10 +77,10 @@ def test_opciones_validas(extension, preparacion, disponible):
 
 def test_estan_registradas_las_cinco_operaciones_de_productos():
     operaciones = {
-        (metodo, ruta.path)
-        for ruta in app.routes
-        if ruta.path.startswith("/productos")
-        for metodo in ruta.methods
+        (metodo.upper(), ruta)
+        for ruta, operaciones in app.openapi()["paths"].items()
+        if ruta.startswith("/productos")
+        for metodo in operaciones
     }
     assert operaciones == {
         ("GET", "/productos"),
