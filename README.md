@@ -1,8 +1,13 @@
-# Katea — API de productos
+# Katea — API de productos y pedidos
 
-Proyecto académico con FastAPI, MySQL 8 y PyMySQL. Pedidos, pagos, QR y autenticación quedan fuera de esta actividad.
+Proyecto académico con FastAPI, Pydantic, MySQL 8 y PyMySQL. Incluye login JSON,
+roles y pedidos con control de dueño. QR, pagos y caja quedan para otra etapa.
 
-## Instalación
+## Preparación
+
+La guía reproducible para el equipo está en [docs/U3S4.md](docs/U3S4.md): instala
+dependencias, configura un MySQL de desarrollo, crea cuentas y ejecuta dos
+corridas con la matrícula de cada integrante.
 
 ```bash
 python3 -m venv .venv
@@ -11,74 +16,98 @@ python -m pip install -r requirements.txt
 python -m pip check
 ```
 
-La aplicación lee DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_NAME desde el entorno o un archivo `.env` local, ignorado por Git. `.env.example` sirve como plantilla. No compartir contraseñas ni versionar `.env`.
+Configurar DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_NAME en el entorno o en
+`.env` local, tomando `.env.example` como plantilla. JWT_SECRETO debe ser aleatorio,
+de al menos 32 bytes, y conservarse entre reinicios; no hay secreto predeterminado.
+No versionar `.env` ni credenciales. La guía incluye generación sin imprimirlo.
 
-Se incluye `compose.yaml` para un MySQL 8 dedicado. Usa el proyecto Docker `katea`, el volumen `katea_mysql_data` y publica el puerto solo en `127.0.0.1:13306`. No modifica los otros contenedores. El usuario `katea_app` accede únicamente a la base `katea`.
-
-La configuración local `.env` contiene también `MYSQL_ROOT_PASSWORD`, usada solo para inicializar el contenedor. Con `.env` preparado:
+`compose.yaml` ofrece MySQL 8, puerto local 13306, proyecto Docker katea y volumen
+katea_mysql_data. Completar también MYSQL_ROOT_PASSWORD antes de iniciarlo:
 
 ```bash
 docker compose up -d --wait mysql
-docker compose ps
+python scripts/crear_usuarios_desarrollo.py
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-MySQL crea la base y el usuario al inicializar un volumen vacío. Cambiar las contraseñas en `.env` después no actualiza las cuentas de un volumen existente. Conservar el volumen para mantener los datos; no usar `docker compose down -v` si se necesitan. La API crea la tabla, no la base. El esquema también está en `sql/esquema.sql`.
+El comando de cuentas requiere KATEA_ENTORNO=desarrollo y pide claves sin eco
+para dev_admin, dev_cliente1 y dev_cliente2. Las inserta juntas con hashes bcrypt;
+si alguna existe, revierte sin reemplazar datos. No hay cuentas automáticas.
 
-```bash
-python -m uvicorn main:app --reload
-```
+MySQL crea la base/usuario de Compose solo al inicializar un volumen nuevo;
+cambiar `.env` después no modifica claves existentes. No eliminar volúmenes
+para cambiar una contraseña. Al arrancar, la API crea tablas ausentes, no la base.
+Las conexiones usan commit/rollback/cierre y SQL con `%s` y valores separados.
 
-Al iniciar, `main.py` llama a `RepositorioProductos.inicializar()`. `basedatos.py` administra conexiones, commit, rollback y cierre. `repositorio.py` ejecuta las consultas y convierte filas a productos. Una conexión fallida al iniciar impide arrancar la API. Los datos sobreviven al reinicio de la API; el volumen configurado en Compose conserva los datos al recrear el contenedor, siempre que no se elimine dicho volumen.
+## Rutas y permisos
 
-Las consultas usan `cursor.execute(sql, parametros)` con marcadores `%s` de PyMySQL y valores separados. No se concatenan datos del cliente ni se usan marcadores `?`.
-
-## Operaciones y reglas
-
-| Método | Ruta | Éxito |
+| Operación | Acceso | Éxito |
 | --- | --- | --- |
-| GET | `/productos` | 200, incluye no disponibles |
-| GET | `/productos/{id}` | 200 |
-| POST | `/productos` | 201, ID autoincremental |
-| PUT | `/productos/{id}` | 200, reemplazo completo |
-| DELETE | `/productos/{id}` | 204 sin cuerpo |
+| POST `/login` | Público, credenciales JSON | 200, access_token y token_type |
+| GET `/productos` | Público, incluye no disponibles | 200 |
+| GET `/productos/{id}` | Público | 200 |
+| POST `/productos` | Admin | 201 |
+| PUT `/productos/{id}` | Admin, reemplazo completo | 200 |
+| DELETE `/productos/{id}` | Admin | 204 sin cuerpo |
+| GET `/pedidos` | Cliente: propios; admin: todos | 200 |
+| GET `/pedidos/{id}` | Cliente: propio; admin: cualquiera | 200 |
+| POST `/pedidos` | Autenticado; dueño desde token | 201 |
+| DELETE `/pedidos/{id}` | Cliente: propio; admin: cualquiera | 204 sin cuerpo |
 
-Los seis campos son obligatorios; se rechazan campos extra, incluido id. Nombre: 2–80 caracteres; descripción: 5–200; ambos se recortan. Precio: número positivo, máximo dos decimales, sin textos ni booleanos; permite ceros finales. Se convierte a Decimal después de la lectura JSON normal, sin preservar precisión arbitraria antes de validar. Imagen: sufijo literal .jpg, .jpeg, .png o .webp, nombre de archivo no vacío y sin CR/LF; no se descarga. Disponible: booleano estricto. Preparación: frio, caliente o no_aplica.
+JWT HS256 con identidad, rol y vencimiento de 30 minutos; contraseñas con bcrypt,
+sal aleatoria y costo 12. Token ausente/inválido/vencido: 401 con
+WWW-Authenticate Bearer. Cliente que escribe productos: 403. Pedido ajeno o
+inexistente: el mismo 404. El token no contiene contraseñas ni hashes.
 
-Los duplicados comparan nombre con strip/casefold y preparación; MySQL respalda la regla con una restricción única. PUT excluye al propio producto y permite repetir el reemplazo. Errores: 400 JSON mal formado, 404 inexistente, 409 duplicado, 422 datos inválidos. El formato es `{"error": "...", "detalles": [...]}`; el 500 lleva mensaje genérico.
+## Reglas de datos
 
-## Contrato y pruebas propias
+Productos exige seis campos y rechaza extras, incluido id. Nombre: 2–80 y
+descripción: 5–200 caracteres tras recortar extremos. Precio: número positivo,
+sin textos/booleanos y máximo dos decimales. Se convierte a Decimal después de
+la lectura JSON normal, sin preservar precisión arbitraria previa a validar.
+Imagen: sufijo literal .jpg/.jpeg/.png/.webp, nombre no vacío y sin CR/LF; no se
+descarga. Disponible: booleano estricto. Preparación: frio/caliente/no_aplica.
+Duplicados: nombre normalizado con strip/casefold y preparación; conflicto 409.
+PUT excluye al propio producto y puede repetirse sin cambiar el resultado.
 
-FastAPI publica `/docs`, `/redoc` y `/openapi.json`, con respuestas de éxito y errores aplicables. Precio de entrada se anuncia como número. Las reglas adicionales están descritas arriba; no todas están expresadas como restricciones del esquema.
+Pedidos recibe productos no vacíos con producto_id y cantidad entera positiva;
+rechaza dueño, precios, total, estado y otros campos extra. Lee precios y
+disponibilidad desde MySQL; guarda precio unitario histórico y total en una
+transacción. Un fallo revierte cabecera y detalles. Los importes de pedidos se
+devuelven como textos con dos decimales; productos conserva precio numérico.
+Lista vacía, cantidad inválida o producto inexistente en el cuerpo: 422.
+Producto no disponible: 409. Borrar un producto referenciado por pedidos: 409;
+puede desactivarse para nuevas compras. Borrar expresamente un pedido autorizado
+elimina sus detalles. Ver [docs/PEDIDOS.md](docs/PEDIDOS.md).
+
+Errores uniformes: `{"error": "...", "detalles": [...]}`. JSON mal formado: 400;
+datos inválidos: 422; fallo interno: 500 genérico.
+
+## Contrato y pruebas
+
+Swagger: `/docs`, ReDoc: `/redoc`, esquema: `/openapi.json`. Authorize permite
+usar Bearer en las rutas protegidas. Contrato exportado: `docs/openapi.json`.
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider
+python scripts/generar_contrato.py
 ```
 
-Las pruebas usan un repositorio aislado inyectado desde `tests/conftest.py`, sin puertos ni conexión real a MySQL. Cubren validaciones, CRUD, errores, duplicados, PUT repetido, documentación y ciclo de vida. La suite obtuvo **90 pruebas aprobadas**. Por separado se verificaron contra MySQL 8.0.46: valores con comillas guardados literalmente, conversión de DECIMAL y booleanos, duplicados, reemplazo repetido y rollback. Estas comprobaciones SQL adicionales se registraron en las evidencias de la sesión.
+La suite propia usa repositorios aislados y un adaptador SQL en memoria, sin
+conectar a MySQL real. Resultado previo registrado: 202 aprobadas.
+La integración previa con MySQL 8.0.46 aislado comprobó hashes/login, permisos,
+propiedad, DECIMAL histórico, FK RESTRICT/CASCADE y rollback ante fallo de detalle.
+U3S4 obtuvo 19/20 con persistencia pendiente y 20/20 tras reiniciar solo la API.
+No son resultados de una nueva ejecución personal de cada integrante.
+Faltan pruebas de concurrencia y carga.
 
-## Pruebas del profesor
+`probar_api_U3S4.py` es la copia auténtica de las 20 pruebas, sin cambios y sin
+sobrescribir probar_api.py/probar_api_U3S3.py anteriores. Usar una copia personal
+ignorada de `prueba_U3S4.example.json`; instrucciones completas de cuentas,
+producto soporte, matrícula, reinicio y respaldo por ronda en
+[docs/U3S4.md](docs/U3S4.md). Los scripts U3S3 no hacen login y sus resultados
+anteriores son históricos; no validan las escrituras protegidas actuales.
 
-`probar_api.py` conserva la versión de sesión 2, de 11 verificaciones. `probar_api_U3S3.py` contiene sin cambios la versión de 15 verificaciones de Aris.zip. Sus mensajes internos todavía usan el nombre probar_api.py; ejecutar en este proyecto:
-
-```bash
-python probar_api_U3S3.py prueba.json
-```
-
-La primera ejecución deja pendiente la prueba 15 y crea `.persistencia_U3S3_*.json`. Reiniciar únicamente la API y repetir el comando desde el mismo directorio y con la misma configuración, conservando MySQL y el archivo de estado. El script comprueba el registro anterior; el reinicio debe hacerse y documentarse manualmente. El asistente ejecutó ambas rondas contra MySQL 8.0.46: **14/15** inicialmente, con persistencia pendiente, y **15/15** después de detener la API y arrancar un proceso nuevo. MySQL permaneció activo. Antes de la segunda ronda se confirmó directamente en SQL que el registro de control existía.
-
-La configuración compartida de `prueba.json` agrega la ruta de OpenAPI; la matrícula personal 20204413 se conserva únicamente como cambio local. Evitar incluir accidentalmente la matrícula personal en commits: añadir archivos por nombre y revisar `git diff --cached -- prueba.json`.
-
-El script nuevo escribe reporte_U3S3 y el anterior reporte_U3S2. Respaldar cada reporte y capturas reales en `evidencias/<matrícula>/<fecha-hora>/` antes de repetir. Reportes, evidencias y estado temporal están ignorados. No atribuir ejecuciones del asistente al estudiante.
-
-El estado y pendientes están en `docs/CONTEXTO_PROYECTO.md`.
-
-
-## Verificación de esta integración (2026-11-06)
-
-Evidencias del asistente: `evidencias/20204413/20261106-151600-persistencia-mysql/`. Incluyen reportes separados por ronda, configuración de prueba con puerto 18000, registros de API, comprobación SQL y constancia de los procesos reiniciados. No se generaron capturas ni son una ejecución personal de Aris.
-
-Resultado final: `U3S3;20204413;http://127.0.0.1:18000/productos;111111111111111;E3B12A3F`.
-
-La API temporal se detuvo al terminar. El MySQL dedicado permanece activo, con su volumen conservado. Para ejecutar personalmente, iniciar la API en el puerto habitual 8000 y usar `prueba.json`, sin cambiar la matrícula. El primer resultado será 14/15 si no existe un estado anterior; repetir después del reinicio para completar la prueba 15.
-
-Aris confirmó su ejecución personal después de reiniciar la API con **15 de 15**. Se revisó el reporte local en el puerto 8000; el reporte y las evidencias personales no se versionan.
+Configuración personal, reportes, capturas, evidencias y estado temporal quedan
+fuera de Git. Conservar los cambios personales de prueba.json sin incluirlos en
+commits. El contexto del equipo está en [docs/CONTEXTO_PROYECTO.md](docs/CONTEXTO_PROYECTO.md).

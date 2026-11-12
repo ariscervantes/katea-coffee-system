@@ -1,6 +1,11 @@
 """Regresiones HTTP de imagen, errores y operaciones de productos."""
 
 import asyncio
+import secrets
+from unittest.mock import Mock
+
+from autenticacion import Autenticacion
+from usuarios import RepositorioUsuarios, Usuario
 
 import httpx
 import pytest
@@ -17,9 +22,13 @@ def aislar_repositorio(repositorio_falso):
 
 
 def cliente(repositorio_falso):
+    usuarios = Mock(spec=RepositorioUsuarios)
+    seguridad = Autenticacion(usuarios, secrets.token_urlsafe(48))
+    token = seguridad.crear_token(Usuario(1, "admin_regresiones", "", "admin"))
     return httpx.AsyncClient(
+        headers={"Authorization": "Bearer " + token},
         transport=httpx.ASGITransport(
-            app=crear_app(repositorio_falso), raise_app_exceptions=False
+            app=crear_app(repositorio_falso, usuarios, seguridad), raise_app_exceptions=False
         ),
         base_url="http://test",
     )

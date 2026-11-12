@@ -43,6 +43,10 @@ SQL_ACTUALIZAR = """
 SQL_ELIMINAR = "DELETE FROM productos WHERE id = %s"
 
 
+class ProductoEnPedido(Exception):
+    """Un detalle de pedido impide borrar el producto referenciado."""
+
+
 class ProductoDuplicado(Exception):
     """La combinación nombre/preparación ya existe."""
 
@@ -137,6 +141,11 @@ class RepositorioProductos:
         return None if fila is None else _producto_desde_fila(fila)
 
     def eliminar(self, id: int) -> bool:
-        with self._base_datos.conexion() as cursor:
-            cursor.execute(SQL_ELIMINAR, (id,))
-            return cursor.rowcount > 0
+        try:
+            with self._base_datos.conexion() as cursor:
+                cursor.execute(SQL_ELIMINAR, (id,))
+                return cursor.rowcount > 0
+        except pymysql.err.IntegrityError as error:
+            if error.args and error.args[0] == 1451:
+                raise ProductoEnPedido from None
+            raise
