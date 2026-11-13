@@ -1,6 +1,7 @@
 """Punto de entrada: uvicorn main:app --reload."""
 
 from contextlib import asynccontextmanager
+from typing import Callable
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 
@@ -11,6 +12,52 @@ from modelos import Producto, ProductoEntrada, RespuestaError
 from repositorio import ProductoDuplicado, ProductoEnPedido, RepositorioProductos
 from repositorio_pedidos import RepositorioPedidos
 from rutas_pedidos import rutas_pedidos
+
+# ---------- Preguntarle algo a la IA (péguenlo una vez, arriba de sus rutas) ----------
+import json, os, urllib.request, urllib.error
+
+
+IA_URL = os.environ.get("EXTERNO_URL", "https://generativelanguage.googleapis.com")
+IA_MODELO = os.environ.get("GEMINI_MODELO", "gemini-flash-lite-latest")
+IA_CLAVE = os.environ.get("GEMINI_API_KEY", "")         # IDEA 3: la clave NO va en el código
+
+
+def _fallo_transitorio(codigo: int) -> bool:
+    """Solo se reintentan fallos que podrían resolverse solos; un 400 no se repite."""
+    return codigo == 429 or 500 <= codigo < 600
+
+
+def preguntar_a_la_ia(instruccion: str) -> dict:
+    """Le pregunta algo a Gemini y regresa el JSON que contestó. Si algo sale mal, responde 502/503/504."""
+    if not IA_CLAVE and "googleapis.com" in IA_URL:
+        raise HTTPException(503, "Falta configurar la variable de entorno GEMINI_API_KEY")
+    cuerpo = {"contents": [{"parts": [{"text": instruccion}]}],
+              "generationConfig": {"responseMimeType": "application/json", "temperature": 0}}
+    datos = json.dumps(cuerpo).encode()
+    for intento in range(2):                                     # Un reintento ante fallos transitorios.
+        req = urllib.request.Request(f"{IA_URL}/v1beta/models/{IA_MODELO}:generateContent",
+                                     data=datos, method="POST",
+                                     headers={"Content-Type": "application/json", "x-goog-api-key": IA_CLAVE})
+        try:                                                     # IDEA 1: su API llama a otra API
+            with urllib.request.urlopen(req, timeout=5) as r:    # IDEA 2: máximo 5 segundos esperando
+                respuesta = json.loads(r.read())
+            return json.loads(respuesta["candidates"][0]["content"]["parts"][0]["text"])
+        except TimeoutError:
+            raise HTTPException(504, "La IA tardó demasiado en responder. Intenta en un momento.")
+        except urllib.error.HTTPError as e:
+            if intento == 0 and _fallo_transitorio(e.code):
+                continue
+            raise HTTPException(502, f"La IA no está disponible (respondió {e.code}). Intenta más tarde.")
+        except urllib.error.URLError as e:
+            if isinstance(e.reason, TimeoutError):
+                raise HTTPException(504, "La IA tardó demasiado en responder. Intenta en un momento.")
+            if intento == 0:
+                continue
+            raise HTTPException(502, "No se pudo conectar con la IA.")
+        except (ValueError, KeyError, IndexError, TypeError):
+            raise HTTPException(502, "La IA respondió algo que no entendemos.")
+    raise HTTPException(502, "La IA no está disponible. Intenta más tarde.")
+
 
 
 MENSAJE_NO_ENCONTRADO = "Producto no encontrado"
@@ -30,12 +77,14 @@ def crear_app(
     usuarios: RepositorioUsuarios | None = None,
     autenticacion: Autenticacion | None = None,
     pedidos: RepositorioPedidos | None = None,
+    preguntar_ia: Callable[[str], dict] | None = None,
 ) -> FastAPI:
     almacen = repositorio or RepositorioProductos()
 
     cuentas = usuarios if usuarios is not None else RepositorioUsuarios()
     seguridad = autenticacion if autenticacion is not None else Autenticacion(cuentas)
     ordenes = pedidos if pedidos is not None else RepositorioPedidos()
+    consultar_ia = preguntar_ia if preguntar_ia is not None else preguntar_a_la_ia
 
     @asynccontextmanager
     async def ciclo_vida(app: FastAPI):
@@ -47,7 +96,7 @@ def crear_app(
     app = FastAPI(title="Katea — API de productos", version="1.0.0", lifespan=ciclo_vida)
     registrar_manejadores(app)
     app.state.autenticacion = seguridad
-    app.include_router(rutas_pedidos(ordenes))
+    app.include_router(rutas_pedidos(ordenes, cuentas, consultar_ia))
 
     @app.post(
         "/login", response_model=Sesion, tags=["Autenticación"],
