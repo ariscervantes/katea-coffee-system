@@ -5,6 +5,113 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/pedidos/comentario": {
+      "post": {
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Comentario",
+        "description": "Clasifica un comentario del cliente autenticado y redacta una respuesta amable.",
+        "operationId": "comentario_pedidos_comentario_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntradaPedidosComentario"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaComentario"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta un token válido o ha vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON mal formado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Comentario vacío o fuera de 2–300 caracteres",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "La IA respondió algo inesperado o no está disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Falta configurar la IA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "La IA tardó demasiado en responder",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerJWT": []
+          }
+        ]
+      }
+    },
     "/pedidos": {
       "get": {
         "tags": [
@@ -824,6 +931,22 @@
         ],
         "title": "DetallePedido"
       },
+      "EntradaPedidosComentario": {
+        "properties": {
+          "comentario": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 2,
+            "title": "Comentario"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "comentario"
+        ],
+        "title": "EntradaPedidosComentario"
+      },
       "Pedido": {
         "properties": {
           "id": {
@@ -1025,6 +1148,31 @@
           "cantidad"
         ],
         "title": "ProductoPedidoEntrada"
+      },
+      "RespuestaComentario": {
+        "properties": {
+          "sentimiento": {
+            "type": "string",
+            "enum": [
+              "positivo",
+              "neutral",
+              "negativo"
+            ],
+            "title": "Sentimiento"
+          },
+          "respuesta": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Respuesta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sentimiento",
+          "respuesta"
+        ],
+        "title": "RespuestaComentario"
       },
       "RespuestaError": {
         "properties": {

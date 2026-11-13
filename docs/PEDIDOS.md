@@ -9,6 +9,7 @@ Todas las rutas exigen Bearer JWT válido mediante `usuario_actual`.
 | GET | `/pedidos` | Solo propios | Todos | 200, lista |
 | GET | `/pedidos/{id}` | Solo propio | Cualquiera | 200 |
 | POST | `/pedidos` | Crea a su nombre | Crea a su nombre | 201, pedido con ID |
+| POST | `/pedidos/comentario` | Comenta como sí mismo | Comenta como sí mismo | 200, sentimiento y respuesta |
 | DELETE | `/pedidos/{id}` | Solo propio | Cualquiera | 204 sin cuerpo |
 
 Crear recibe este cuerpo (los IDs son ilustrativos, no semillas):
@@ -55,6 +56,22 @@ objetos ajenos; conserva los códigos de validación/conflicto de la API. El 409
 para indisponibilidad expresa un conflicto con el estado actual del catálogo.
 El cliente recibe exactamente el mismo error para un pedido ajeno e inexistente.
 Un cliente autenticado sí puede operar pedidos: no se le aplica exigir_admin.
+
+## Comentarios con IA
+
+`POST /pedidos/comentario` exige un JWT válido. El cuerpo solo admite
+`comentario`, texto estricto de 2 a 300 caracteres tras recortar extremos; se
+rechazan campos extra. La ruta usa la identidad del token (`id` y `rol`) y
+consulta el nombre de usuario en `usuarios` para construir el contexto que se
+envía a Gemini. El comentario del cliente se agrega al final de la instrucción.
+
+La respuesta esperada de la IA es un objeto con `sentimiento` limitado a
+positivo/neutral/negativo y `respuesta` no vacía. La API valida ese contenido,
+recorta la respuesta a 200 caracteres y responde solo esos dos campos. Una
+respuesta con otra forma produce 502; `GEMINI_API_KEY` ausente, 503; un timeout
+de 5 segundos, 504. La llamada externa se reintenta una vez ante 5xx/429, pero no
+ante 400, respuestas inválidas ni timeouts. La clave y el modelo se configuran en
+el entorno y no se versionan.
 
 ## Relaciones e integridad
 
