@@ -35,6 +35,20 @@ def test_busqueda_parametrizada_y_conversion(sql):
     assert repo.buscar("ausente") is None
 
 
+def test_busqueda_por_id_parametrizada(sql):
+    repo, conexion, cursor = sql
+    cursor.fetchone.return_value = {"id": 7, "usuario": "cliente", "clave_hash": "hash-simulado", "rol": "cliente"}
+    usuario = repo.obtener(7)
+    consulta, parametros = cursor.execute.call_args.args
+    assert "WHERE id = %s" in consulta
+    assert parametros == (7,)
+    assert usuario.id == 7 and usuario.usuario == "cliente"
+    conexion.commit.assert_called_once()
+    conexion.close.assert_called_once()
+    cursor.fetchone.return_value = None
+    assert repo.obtener(999) is None
+
+
 def test_creacion_tabla_sin_semillas(sql):
     repo, _, cursor = sql
     repo.inicializar()

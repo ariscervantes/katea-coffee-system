@@ -42,6 +42,15 @@ class RepositorioUsuarios:
             fila = cursor.fetchone()
         return Usuario(**fila) if fila else None
 
+    def obtener(self, id: int) -> Usuario | None:
+        with self._base_datos.conexion() as cursor:
+            cursor.execute(
+                "SELECT id, usuario, clave_hash, rol FROM usuarios WHERE id = %s",
+                (id,),
+            )
+            fila = cursor.fetchone()
+        return Usuario(**fila) if fila else None
+
     def crear_cuentas_desarrollo(self, cuentas: list[tuple[str, str, Rol]]) -> None:
         """Inserción atómica: si un nombre existe, rollback sin reemplazarlo."""
         with self._base_datos.conexion() as cursor:

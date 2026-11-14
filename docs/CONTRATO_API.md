@@ -63,6 +63,7 @@ Ver [AUTENTICACION.md](AUTENTICACION.md) para configuración y cuentas de prueba
 | `GET /pedidos` | 200, lista | 401, 500 |
 | `GET /pedidos/{id}` | 200 | 401, 404, 422, 500 |
 | `POST /pedidos` | 201, pedido con ID | 400, 401, 409, 422, 500 |
+| `POST /pedidos/comentario` | 200, sentimiento y respuesta | 400, 401, 422, 502, 503, 504, 500 |
 | `DELETE /pedidos/{id}` | 204 sin cuerpo | 401, 404, 422, 500 |
 
 Todas requieren BearerJWT. Cliente lista/consulta/elimina solo propios; admin
@@ -79,3 +80,10 @@ Pedido devuelve id, usuario_id, estado pendiente, total y productos con cantidad
 y precio_unitario histórico. Total y precio_unitario se anuncian como textos
 decimales con dos posiciones. Ver [PEDIDOS.md](PEDIDOS.md) para transacción,
 restricciones de borrado y preparación de los datos del script U3S4.
+
+`POST /pedidos/comentario` también exige BearerJWT. Recibe únicamente
+`{"comentario": "..."}` con 2–300 caracteres; rechaza campos extra. El nombre, ID
+y rol del usuario se obtienen del token y del repositorio, nunca del cuerpo, y se
+incluyen en el contexto de la IA. Responde `sentimiento` (positivo, neutral o
+negativo) y `respuesta` (máximo 200 caracteres). Una respuesta inválida de la IA
+da 502; la falta de configuración, 503; el timeout, 504.

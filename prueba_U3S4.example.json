@@ -57,5 +57,14 @@
         }
       ]
     }
+  },
+  "externo": {
+    "metodo": "POST",
+    "ruta": "/pedidos/comentario",
+    "token": "usuario",
+    "esperado_codigo": 200,
+    "cuerpo": {
+      "comentario": "La comida llegó fría y una hora tarde"
+    }
   }
 }

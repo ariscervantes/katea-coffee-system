@@ -3,10 +3,12 @@
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_serializer, model_validator
 
 Id = Annotated[int, Field(strict=True, gt=0, le=4294967295)]
 Cantidad = Annotated[int, Field(strict=True, gt=0, le=4294967295)]
+Comentario = Annotated[str, StringConstraints(strict=True, strip_whitespace=True, min_length=2, max_length=300)]
+Sentimiento = Literal["positivo", "neutral", "negativo"]
 
 
 class ProductoPedidoEntrada(BaseModel):
@@ -47,3 +49,13 @@ class Pedido(BaseModel):
     @field_serializer("total", when_used="json")
     def serializar_total(self, valor: Decimal) -> str:
         return format(valor, ".2f")
+
+
+class EntradaPedidosComentario(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    comentario: Comentario
+
+
+class RespuestaComentario(BaseModel):
+    sentimiento: Sentimiento
+    respuesta: Annotated[str, Field(min_length=1, max_length=200)]

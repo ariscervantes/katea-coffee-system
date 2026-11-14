@@ -52,12 +52,22 @@ Las conexiones usan commit/rollback/cierre y SQL con `%s` y valores separados.
 | GET `/pedidos` | Cliente: propios; admin: todos | 200 |
 | GET `/pedidos/{id}` | Cliente: propio; admin: cualquiera | 200 |
 | POST `/pedidos` | Autenticado; dueño desde token | 201 |
+| POST `/pedidos/comentario` | Autenticado; usuario desde token | 200, sentimiento y respuesta de IA |
 | DELETE `/pedidos/{id}` | Cliente: propio; admin: cualquiera | 204 sin cuerpo |
 
 JWT HS256 con identidad, rol y vencimiento de 30 minutos; contraseñas con bcrypt,
 sal aleatoria y costo 12. Token ausente/inválido/vencido: 401 con
 WWW-Authenticate Bearer. Cliente que escribe productos: 403. Pedido ajeno o
 inexistente: el mismo 404. El token no contiene contraseñas ni hashes.
+
+`POST /pedidos/comentario` exige sesión y recibe `{"comentario": "..."}` (2–300
+caracteres, sin campos extra). La API consulta el nombre, ID y rol del usuario
+autenticado y los incluye en el contexto enviado a Gemini; nunca acepta esos
+datos desde el cuerpo. Configurar `GEMINI_API_KEY` en el entorno (y opcionalmente
+`GEMINI_MODELO` o `EXTERNO_URL`) para usar la IA. La llamada reintenta una vez
+ante 5xx/429, pero no ante 400, respuestas inválidas ni timeouts. Respuestas
+inesperadas de la IA dan 502; falta de configuración, 503; tiempo de espera
+agotado, 504.
 
 ## Reglas de datos
 
@@ -91,7 +101,12 @@ usar Bearer en las rutas protegidas. Contrato exportado: `docs/openapi.json`.
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider
 python scripts/generar_contrato.py
+python probar_externo.py prueba_U3S4.local.json
 ```
+
+`probar_externo.py` valida el endpoint configurado en la sección `externo` de
+`prueba.json`/`prueba_U3S4.local.json`; reutiliza el login de `auth` si
+`externo.token` indica admin, usuario u otro.
 
 La suite propia usa repositorios aislados y un adaptador SQL en memoria, sin
 conectar a MySQL real. Resultado previo registrado: 202 aprobadas.

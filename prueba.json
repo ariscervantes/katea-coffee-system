@@ -1,5 +1,5 @@
 {
-	"matricula": "20209634",
+	"matricula": "20205116",
 	"base": "http://127.0.0.1:8000",
 	"openapi": "/openapi.json",
 	"coleccion": "/productos",
@@ -30,5 +30,41 @@
 		"preparacion": "caliente"
 	},
 	"id_inexistente": "999999",
-	"encabezados": {}
+	"encabezados": {},
+	"auth": {
+		"login": "/login",
+		"campo_token": "access_token",
+		"admin": {
+			"usuario": "dev_admin",
+			"clave": "12345678"
+		},
+		"usuario": {
+			"usuario": "dev_cliente1",
+			"clave": "123456789"
+		},
+		"otro": {
+			"usuario": "dev_cliente2",
+			"clave": "123456789"
+		}
+	},
+	"propio": {
+		"coleccion": "/pedidos",
+		"valido": {
+			"productos": [
+				{
+					"producto_id": 12,
+					"cantidad": 1
+				}
+			]
+		}
+	},
+	"externo": {
+		"metodo": "POST",
+		"ruta": "/pedidos/comentario",
+		"token": "usuario",
+		"esperado_codigo": 200,
+		"cuerpo": {
+			"comentario": "La comida llegó fría y una hora tarde"
+		}
+	}
 }
