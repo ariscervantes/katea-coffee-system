@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Callable
 
 from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 
 from autenticacion import Autenticacion, Credenciales, Sesion, exigir_admin
 from usuarios import RepositorioUsuarios
@@ -94,6 +95,16 @@ def crear_app(
         yield
 
     app = FastAPI(title="Katea — API de productos", version="1.0.0", lifespan=ciclo_vida)
+    # No usar "*": el navegador debe limitar el acceso a los orígenes del front.
+    origenes_cors = os.environ.get(
+        "CORS_ORIGENES", "http://127.0.0.1:5500,http://localhost:5500"
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[origen.strip() for origen in origenes_cors.split(",") if origen.strip()],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
     registrar_manejadores(app)
     app.state.autenticacion = seguridad
     app.include_router(rutas_pedidos(ordenes, cuentas, consultar_ia))

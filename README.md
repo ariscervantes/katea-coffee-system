@@ -39,6 +39,29 @@ cambiar `.env` después no modifica claves existentes. No eliminar volúmenes
 para cambiar una contraseña. Al arrancar, la API crea tablas ausentes, no la base.
 Las conexiones usan commit/rollback/cierre y SQL con `%s` y valores separados.
 
+## Front y CORS
+
+Para servir el front, desde la raíz ejecuta `cd front` y luego
+`python -m http.server 5500 --bind 127.0.0.1`; abre
+http://127.0.0.1:5500. No abras `index.html` con doble clic: su origen sería
+`null`, que la API no permite. Inicia sesión como `dev_admin` (admin), creado con
+`KATEA_ENTORNO=desarrollo python scripts/crear_usuarios_desarrollo.py`.
+
+`CORS_ORIGENES` define una lista de orígenes permitidos separados por comas.
+Por defecto es `http://127.0.0.1:5500,http://localhost:5500`, como indica
+`main.py` y se configura en `.env.example`. No se usa `*`.
+
+Para correr las pruebas del profesor con el simulador, usa tres terminales:
+
+```bash
+python simulador.py
+EXTERNO_URL=http://127.0.0.1:9000 GEMINI_API_KEY=valor_de_prueba python -m uvicorn main:app --host 127.0.0.1 --port 8000
+python probar_api.py
+```
+
+`simulador.py` y `probar_api.py` son archivos del profesor. `prueba.json` es
+configuración local de pruebas y no se sube al repositorio.
+
 ## Rutas y permisos
 
 | Operación | Acceso | Éxito |
