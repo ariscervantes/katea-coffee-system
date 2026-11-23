@@ -11,15 +11,15 @@ import httpx
 import pytest
 
 from almacen_pedidos import AlmacenAislado
-from autenticacion import Autenticacion
-from basedatos import BaseDatos, ConfiguracionBD
-from main import crear_app
-from modelos_pedidos import PedidoEntrada
-from repositorio import RepositorioProductos
-from repositorio_pedidos import (
+from app.seguridad import Autenticacion
+from app.db.conexion import BaseDatos, ConfiguracionBD
+from app.main import crear_app
+from app.modelos.pedidos import PedidoEntrada
+from app.repositorios.productos import RepositorioProductos
+from app.repositorios.pedidos import (
     ESQUEMA_DETALLES, ESQUEMA_PEDIDOS, MAX_IMPORTE, RepositorioPedidos,
 )
-from usuarios import RepositorioUsuarios, Usuario
+from app.repositorios.usuarios import RepositorioUsuarios, Usuario
 
 VALIDO = {"productos": [{"producto_id": 1, "cantidad": 2}, {"producto_id": 3, "cantidad": 3}]}
 
@@ -27,7 +27,7 @@ VALIDO = {"productos": [{"producto_id": 1, "cantidad": 2}, {"producto_id": 3, "c
 @pytest.fixture
 def escenario(monkeypatch):
     almacen = AlmacenAislado()
-    monkeypatch.setattr("basedatos.pymysql.connect", almacen.conectar)
+    monkeypatch.setattr("app.db.conexion.pymysql.connect", almacen.conectar)
     base = BaseDatos(ConfiguracionBD("aislado", 3306, "prueba", "solo-pruebas", "aislado"))
     repo = RepositorioPedidos(base)
     usuarios = Mock(spec=RepositorioUsuarios)

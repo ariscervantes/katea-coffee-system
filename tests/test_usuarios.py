@@ -5,15 +5,15 @@ from unittest.mock import MagicMock
 import pymysql
 import pytest
 
-from basedatos import BaseDatos, ConfiguracionBD
-from usuarios import ESQUEMA_USUARIOS, RepositorioUsuarios
+from app.db.conexion import BaseDatos, ConfiguracionBD
+from app.repositorios.usuarios import ESQUEMA_USUARIOS, RepositorioUsuarios
 
 
 @pytest.fixture
 def sql(monkeypatch):
     conexion = MagicMock()
     cursor = conexion.cursor.return_value.__enter__.return_value
-    monkeypatch.setattr("basedatos.pymysql.connect", lambda **_: conexion)
+    monkeypatch.setattr("app.db.conexion.pymysql.connect", lambda **_: conexion)
     base = BaseDatos(ConfiguracionBD("aislado", 3306, "prueba", "no-es-una-credencial-real", "prueba"))
     return RepositorioUsuarios(base), conexion, cursor
 

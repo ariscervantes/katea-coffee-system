@@ -11,11 +11,11 @@ import httpx
 import jwt
 import pytest
 
-from autenticacion import Autenticacion
-from main import crear_app
-from modelos import ProductoEntrada
+from app.seguridad import Autenticacion
+from app.main import crear_app
+from app.modelos.productos import ProductoEntrada
 from test_base_api import datos_validos
-from usuarios import RepositorioUsuarios, Usuario
+from app.repositorios.usuarios import RepositorioUsuarios, Usuario
 
 
 @pytest.fixture

@@ -11,7 +11,7 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
-from usuarios import RepositorioUsuarios, Rol, Usuario
+from app.repositorios.usuarios import RepositorioUsuarios, Rol, Usuario
 
 ALGORITMO = "HS256"
 DURACION = timedelta(minutes=30)

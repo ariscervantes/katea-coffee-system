@@ -4,10 +4,10 @@ import asyncio
 
 import httpx
 
-from main import crear_app
+from app.main import crear_app
 from unittest.mock import Mock
-from usuarios import RepositorioUsuarios
-from repositorio_pedidos import RepositorioPedidos
+from app.repositorios.usuarios import RepositorioUsuarios
+from app.repositorios.pedidos import RepositorioPedidos
 
 
 def test_documentacion_y_ciclo_de_vida(repositorio_falso):

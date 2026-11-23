@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from basedatos import BaseDatos
+from app.db.conexion import BaseDatos
 
 Rol = Literal["admin", "cliente"]
 

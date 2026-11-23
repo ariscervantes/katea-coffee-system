@@ -7,8 +7,8 @@ concatenan al texto del SQL.
 
 import pymysql
 
-from basedatos import BaseDatos
-from modelos import Producto, ProductoEntrada
+from app.db.conexion import BaseDatos
+from app.modelos.productos import Producto, ProductoEntrada
 
 
 SQL_LISTAR = "SELECT id, nombre, descripcion, precio, imagen_url, disponible, preparacion FROM productos ORDER BY id"

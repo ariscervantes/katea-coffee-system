@@ -4,13 +4,13 @@ import asyncio
 import secrets
 from unittest.mock import Mock
 
-from autenticacion import Autenticacion
-from usuarios import RepositorioUsuarios, Usuario
+from app.seguridad import Autenticacion
+from app.repositorios.usuarios import RepositorioUsuarios, Usuario
 
 import httpx
 import pytest
 
-from main import crear_app
+from app.main import crear_app
 from test_base_api import datos_validos
 
 

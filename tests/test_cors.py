@@ -4,7 +4,7 @@ import asyncio
 
 import httpx
 
-from main import crear_app
+from app.main import crear_app
 
 
 def test_cors_permite_origen_local_y_preflight(repositorio_falso, monkeypatch):

@@ -7,7 +7,7 @@ import urllib.error
 import pytest
 from fastapi import HTTPException
 
-import main
+from app import main
 
 
 class RespuestaFalsa:

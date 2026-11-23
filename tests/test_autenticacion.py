@@ -10,12 +10,12 @@ import pytest
 from fastapi import Depends
 import httpx
 
-from autenticacion import (
+from app.seguridad import (
     Autenticacion, Credenciales, Identidad, comprobar_clave, proteger_clave,
     secreto_desde_entorno, usuario_actual,
 )
-from main import crear_app
-from usuarios import Usuario
+from app.main import crear_app
+from app.repositorios.usuarios import Usuario
 
 
 class UsuariosFalsos:

@@ -7,10 +7,10 @@ from unittest.mock import Mock
 import httpx
 import pytest
 
-from autenticacion import Autenticacion
-from main import crear_app
-from repositorio_pedidos import RepositorioPedidos
-from usuarios import Usuario
+from app.seguridad import Autenticacion
+from app.main import crear_app
+from app.repositorios.pedidos import RepositorioPedidos
+from app.repositorios.usuarios import Usuario
 
 
 class UsuariosFalsos:

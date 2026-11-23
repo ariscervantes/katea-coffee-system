@@ -4,13 +4,13 @@ from typing import Annotated, Callable
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 
-from autenticacion import Identidad, usuario_actual
-from modelos import RespuestaError
-from modelos_pedidos import EntradaPedidosComentario, Pedido, PedidoEntrada, RespuestaComentario
-from repositorio_pedidos import (
+from app.seguridad import Identidad, usuario_actual
+from app.modelos.productos import RespuestaError
+from app.modelos.pedidos import EntradaPedidosComentario, Pedido, PedidoEntrada, RespuestaComentario
+from app.repositorios.pedidos import (
     ImporteFueraDeRango, ProductoNoDisponible, ProductoPedidoInexistente, RepositorioPedidos,
 )
-from usuarios import RepositorioUsuarios
+from app.repositorios.usuarios import RepositorioUsuarios
 
 
 SesionActual = Annotated[Identidad, Depends(usuario_actual)]

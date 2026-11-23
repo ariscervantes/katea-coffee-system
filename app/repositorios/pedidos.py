@@ -2,8 +2,8 @@
 
 from decimal import Decimal, localcontext
 
-from basedatos import BaseDatos
-from modelos_pedidos import DetallePedido, Pedido, PedidoEntrada
+from app.db.conexion import BaseDatos
+from app.modelos.pedidos import DetallePedido, Pedido, PedidoEntrada
 
 ESQUEMA_PEDIDOS = """
 CREATE TABLE IF NOT EXISTS pedidos (

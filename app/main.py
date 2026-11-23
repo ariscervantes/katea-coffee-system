@@ -1,4 +1,4 @@
-"""Punto de entrada: uvicorn main:app --reload."""
+"""Punto de entrada: python -m uvicorn app.main:app --reload."""
 
 from contextlib import asynccontextmanager
 from typing import Callable
@@ -6,13 +6,13 @@ from typing import Callable
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from autenticacion import Autenticacion, Credenciales, Sesion, exigir_admin
-from usuarios import RepositorioUsuarios
-from errores import registrar_manejadores
-from modelos import Producto, ProductoEntrada, RespuestaError
-from repositorio import ProductoDuplicado, ProductoEnPedido, RepositorioProductos
-from repositorio_pedidos import RepositorioPedidos
-from rutas_pedidos import rutas_pedidos
+from app.seguridad import Autenticacion, Credenciales, Sesion, exigir_admin
+from app.repositorios.usuarios import RepositorioUsuarios
+from app.errores import registrar_manejadores
+from app.modelos.productos import Producto, ProductoEntrada, RespuestaError
+from app.repositorios.productos import ProductoDuplicado, ProductoEnPedido, RepositorioProductos
+from app.repositorios.pedidos import RepositorioPedidos
+from app.routers.pedidos import rutas_pedidos
 
 # ---------- Preguntarle algo a la IA (péguenlo una vez, arriba de sus rutas) ----------
 import json, os, urllib.request, urllib.error

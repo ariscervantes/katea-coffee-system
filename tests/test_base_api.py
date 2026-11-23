@@ -7,8 +7,8 @@ import httpx
 import pytest
 from pydantic import ValidationError
 
-from main import app, crear_app
-from modelos import ProductoEntrada
+from app.main import app, crear_app
+from app.modelos.productos import ProductoEntrada
 
 
 def datos_validos():

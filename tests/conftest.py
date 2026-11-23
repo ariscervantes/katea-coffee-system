@@ -4,8 +4,8 @@ from threading import Lock
 
 import pytest
 
-from modelos import Producto, ProductoEntrada
-from repositorio import ProductoDuplicado, nombre_normalizado
+from app.modelos.productos import Producto, ProductoEntrada
+from app.repositorios.productos import ProductoDuplicado, nombre_normalizado
 
 
 class RepositorioFalso:

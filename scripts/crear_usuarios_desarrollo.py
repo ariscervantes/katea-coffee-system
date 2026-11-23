@@ -11,8 +11,8 @@ sys.path.insert(0, str(RAIZ))
 
 import pymysql
 
-from autenticacion import proteger_clave
-from usuarios import RepositorioUsuarios
+from app.seguridad import proteger_clave
+from app.repositorios.usuarios import RepositorioUsuarios
 
 CUENTAS = (("dev_admin", "admin"), ("dev_cliente1", "cliente"), ("dev_cliente2", "cliente"))
 
