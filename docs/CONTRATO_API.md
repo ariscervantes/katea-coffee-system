@@ -41,7 +41,9 @@ python scripts/generar_contrato.py
 
 En errores de validación, `detalles` contiene objetos con `campo`, `mensaje` y
 `tipo`. Las respuestas de error están declaradas en las cinco operaciones con el
-esquema `RespuestaError`, por lo que aparecen también en Swagger UI.
+esquema `RespuestaError`, por lo que aparecen también en Swagger UI. El catálogo
+completo de códigos, mensajes y reglas de validación está en
+[errores.md](errores.md).
 
 ## Autenticación y autorización (U3S4, etapas 1 y 2)
 
