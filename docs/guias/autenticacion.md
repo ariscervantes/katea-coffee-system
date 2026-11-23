@@ -103,10 +103,10 @@ base habitual. Ver el contexto y las evidencias separadas por ronda.
 Las cuatro rutas de pedidos usan usuario_actual. El dueño al crear proviene del
 ID verificado; el cliente lista, consulta y elimina solo propios, con filtros
 SQL. Admin tiene acceso global explícito. Acceder a un pedido ajeno da 404.
-Ver [PEDIDOS.md](PEDIDOS.md) para el contrato y las transacciones.
+Ver [pedidos.md](pedidos.md) para el contrato y las transacciones.
 
 La integración MySQL aislada y las dos rondas U3S4 están comprobadas. Faltan
 capturas personales, revisión por otro integrante y pruebas de concurrencia.
 QR, pagos y caja quedan fuera de esta actividad.
 
-La guía del equipo con configuración privada y dos corridas está en [U3S4.md](U3S4.md).
+La guía del equipo con configuración privada y dos corridas está en [u3s4.md](u3s4.md).

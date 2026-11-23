@@ -109,7 +109,7 @@ pedidos: el DELETE de pedidos pedido en esta actividad es físico.
 ## Preparación del script de 20 pruebas
 
 El script auténtico está compartido como `probar_api_U3S4.py`. Para preparar
-cuentas, producto soporte y configuración personal, seguir [U3S4.md](U3S4.md).
+cuentas, producto soporte y configuración personal, seguir [u3s4.md](u3s4.md).
 Fue ejecutado sin cambios en la integración previa descrita al final. La prueba 20 envía
 `propio.valido` tal como está, espera 201 y un ID, consulta con dos usuarios y
 finalmente intenta borrar como dueño. No crea el producto requerido para ese pedido.

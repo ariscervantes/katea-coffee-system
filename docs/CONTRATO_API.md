@@ -54,7 +54,7 @@ Los tokens llevan identidad, rol y vencimiento de 30 minutos.
 el rol. POST, PUT y DELETE de productos usan esta dependencia; los dos GET
 siguen públicos. El contrato muestra BearerJWT y Authorize en Swagger, y
 documenta 401/403 para las escrituras. `/login` permanece público.
-Ver [AUTENTICACION.md](AUTENTICACION.md) para configuración y cuentas de prueba.
+Ver [guias/autenticacion.md](guias/autenticacion.md) para configuración y cuentas de prueba.
 
 ## Pedidos (U3S4, etapa 3)
 
@@ -78,7 +78,7 @@ Lista vacía y datos inválidos dan 422; producto inexistente, 422; no disponibl
 
 Pedido devuelve id, usuario_id, estado pendiente, total y productos con cantidad
 y precio_unitario histórico. Total y precio_unitario se anuncian como textos
-decimales con dos posiciones. Ver [PEDIDOS.md](PEDIDOS.md) para transacción,
+decimales con dos posiciones. Ver [guias/pedidos.md](guias/pedidos.md) para transacción,
 restricciones de borrado y preparación de los datos del script U3S4.
 
 `POST /pedidos/comentario` también exige BearerJWT. Recibe únicamente

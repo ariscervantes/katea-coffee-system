@@ -5,7 +5,7 @@ roles y pedidos con control de dueño. QR, pagos y caja quedan para otra etapa.
 
 ## Preparación
 
-La guía reproducible para el equipo está en [docs/U3S4.md](docs/U3S4.md): instala
+La guía reproducible para el equipo está en [docs/guias/u3s4.md](docs/guias/u3s4.md): instala
 dependencias, configura un MySQL de desarrollo, crea cuentas y ejecuta dos
 corridas con la matrícula de cada integrante.
 
@@ -54,13 +54,13 @@ Por defecto es `http://127.0.0.1:5500,http://localhost:5500`, como indica
 Para correr las pruebas del profesor con el simulador, usa tres terminales:
 
 ```bash
-python simulador.py
+python pruebas/profesor/simulador.py
 EXTERNO_URL=http://127.0.0.1:9000 GEMINI_API_KEY=valor_de_prueba python -m uvicorn main:app --host 127.0.0.1 --port 8000
-python probar_api.py
+python pruebas/profesor/probar_api.py pruebas/profesor/prueba.json
 ```
 
-`simulador.py` y `probar_api.py` son archivos del profesor. `prueba.json` es
-configuración local de pruebas y no se sube al repositorio.
+`simulador.py` y `probar_api.py` son archivos del profesor y viven en
+`pruebas/profesor/`. `pruebas/profesor/prueba.json` es configuración local de pruebas y no se sube al repositorio.
 
 ## Rutas y permisos
 
@@ -111,7 +111,7 @@ devuelven como textos con dos decimales; productos conserva precio numérico.
 Lista vacía, cantidad inválida o producto inexistente en el cuerpo: 422.
 Producto no disponible: 409. Borrar un producto referenciado por pedidos: 409;
 puede desactivarse para nuevas compras. Borrar expresamente un pedido autorizado
-elimina sus detalles. Ver [docs/PEDIDOS.md](docs/PEDIDOS.md).
+elimina sus detalles. Ver [docs/guias/pedidos.md](docs/guias/pedidos.md).
 
 Errores uniformes: `{"error": "...", "detalles": [...]}`. JSON mal formado: 400;
 datos inválidos: 422; fallo interno: 500 genérico.
@@ -124,7 +124,7 @@ usar Bearer en las rutas protegidas. Contrato exportado: `docs/openapi.json`.
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider
 python scripts/generar_contrato.py
-python probar_externo.py prueba_U3S4.local.json
+python pruebas/profesor/probar_externo.py pruebas/profesor/prueba_U3S4.local.json
 ```
 
 `probar_externo.py` valida el endpoint configurado en la sección `externo` de
@@ -141,9 +141,9 @@ Faltan pruebas de concurrencia y carga.
 
 `probar_api_U3S4.py` es la copia auténtica de las 20 pruebas, sin cambios y sin
 sobrescribir probar_api.py/probar_api_U3S3.py anteriores. Usar una copia personal
-ignorada de `prueba_U3S4.example.json`; instrucciones completas de cuentas,
+ignorada de `pruebas/profesor/prueba_U3S4.example.json`; instrucciones completas de cuentas,
 producto soporte, matrícula, reinicio y respaldo por ronda en
-[docs/U3S4.md](docs/U3S4.md). Los scripts U3S3 no hacen login y sus resultados
+[docs/guias/u3s4.md](docs/guias/u3s4.md). Los scripts U3S3 no hacen login y sus resultados
 anteriores son históricos; no validan las escrituras protegidas actuales.
 
 Configuración personal, reportes, capturas, evidencias y estado temporal quedan
