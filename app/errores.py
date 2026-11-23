@@ -7,8 +7,19 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
+from app.modelos.productos import RespuestaError
+
 
 registrador = logging.getLogger(__name__)
+
+# Respuestas de error documentadas en OpenAPI; comparten el esquema RespuestaError.
+RESPUESTA_400 = {"model": RespuestaError, "description": "JSON mal formado"}
+RESPUESTA_401 = {"model": RespuestaError, "description": "Falta un token válido o ha vencido"}
+RESPUESTA_403 = {"model": RespuestaError, "description": "Se requiere rol admin"}
+RESPUESTA_404 = {"model": RespuestaError, "description": "Producto no encontrado"}
+RESPUESTA_409 = {"model": RespuestaError, "description": "Nombre y preparación duplicados"}
+RESPUESTA_422 = {"model": RespuestaError, "description": "Datos o parámetros inválidos"}
+RESPUESTA_500 = {"model": RespuestaError, "description": "Error interno del servidor"}
 
 
 def registrar_manejadores(app: FastAPI) -> None:
