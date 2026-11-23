@@ -422,6 +422,16 @@
               }
             }
           },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
           "400": {
             "description": "JSON mal formado",
             "content": {
@@ -444,16 +454,6 @@
           },
           "422": {
             "description": "Datos o parámetros inválidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RespuestaError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Error interno del servidor",
             "content": {
               "application/json": {
                 "schema": {
@@ -520,6 +520,16 @@
               }
             }
           },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
           "400": {
             "description": "JSON mal formado",
             "content": {
@@ -569,16 +579,6 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Error interno del servidor",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RespuestaError"
-                }
-              }
-            }
           }
         },
         "security": [
@@ -614,6 +614,16 @@
               }
             }
           },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Producto no encontrado",
             "content": {
@@ -626,16 +636,6 @@
           },
           "422": {
             "description": "Datos o parámetros inválidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RespuestaError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Error interno del servidor",
             "content": {
               "application/json": {
                 "schema": {
@@ -686,6 +686,16 @@
               }
             }
           },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
+          },
           "400": {
             "description": "JSON mal formado",
             "content": {
@@ -745,16 +755,6 @@
                 }
               }
             }
-          },
-          "500": {
-            "description": "Error interno del servidor",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RespuestaError"
-                }
-              }
-            }
           }
         }
       },
@@ -780,6 +780,16 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaError"
+                }
+              }
+            }
           },
           "401": {
             "description": "Falta un token válido o ha vencido",
@@ -823,16 +833,6 @@
           },
           "422": {
             "description": "Datos o parámetros inválidos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RespuestaError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Error interno del servidor",
             "content": {
               "application/json": {
                 "schema": {
