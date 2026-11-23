@@ -3,6 +3,23 @@
 Proyecto académico con FastAPI, Pydantic, MySQL 8 y PyMySQL. Incluye login JSON,
 roles y pedidos con control de dueño. QR, pagos y caja quedan para otra etapa.
 
+## Estructura
+
+```text
+app/
+  main.py            crear_app(): FastAPI, CORS, lifespan e include_router
+  errores.py         formato uniforme de errores y respuestas OpenAPI
+  seguridad.py       JWT, bcrypt y dependencias de sesión/rol
+  db/conexion.py     configuración y conexión a MySQL
+  modelos/           esquemas Pydantic de productos y pedidos
+  repositorios/      acceso a datos: productos, pedidos y usuarios
+  routers/           endpoints: auth (/login), productos y pedidos
+tests/               suite propia (pytest)
+scripts/             generar contrato y crear cuentas de desarrollo
+pruebas/profesor/    scripts del profesor, sin modificar
+sql/  docs/  front/
+```
+
 ## Preparación
 
 La guía reproducible para el equipo está en [docs/guias/u3s4.md](docs/guias/u3s4.md): instala
@@ -27,7 +44,7 @@ katea_mysql_data. Completar también MYSQL_ROOT_PASSWORD antes de iniciarlo:
 ```bash
 docker compose up -d --wait mysql
 python scripts/crear_usuarios_desarrollo.py
-python -m uvicorn main:app --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 El comando de cuentas requiere KATEA_ENTORNO=desarrollo y pide claves sin eco
@@ -49,13 +66,13 @@ http://127.0.0.1:5500. No abras `index.html` con doble clic: su origen sería
 
 `CORS_ORIGENES` define una lista de orígenes permitidos separados por comas.
 Por defecto es `http://127.0.0.1:5500,http://localhost:5500`, como indica
-`main.py` y se configura en `.env.example`. No se usa `*`.
+`app/main.py` y se configura en `.env.example`. No se usa `*`.
 
 Para correr las pruebas del profesor con el simulador, usa tres terminales:
 
 ```bash
 python pruebas/profesor/simulador.py
-EXTERNO_URL=http://127.0.0.1:9000 GEMINI_API_KEY=valor_de_prueba python -m uvicorn main:app --host 127.0.0.1 --port 8000
+EXTERNO_URL=http://127.0.0.1:9000 GEMINI_API_KEY=valor_de_prueba python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 python pruebas/profesor/probar_api.py pruebas/profesor/prueba.json
 ```
 

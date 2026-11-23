@@ -24,7 +24,7 @@ emitido. No se implementó registro público ni edición de usuarios en esta eta
 
 ## Persistencia y dependencias
 
-`usuarios.py` crea, si falta, una tabla InnoDB con ID autoincremental, usuario
+`app/repositorios/usuarios.py` crea, si falta, una tabla InnoDB con ID autoincremental, usuario
 único y sensible a mayúsculas, hash bcrypt y rol ENUM. Los nombres se comparan
 literalmente, sin recortar espacios ni cambiar mayúsculas en el login.
 No se alteran tablas ni registros existentes. El arranque agrega únicamente la

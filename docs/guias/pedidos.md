@@ -83,7 +83,7 @@ el entorno y no se versionan.
 - El CASCADE solo borra detalles al eliminar expresamente el pedido autorizado.
   Borrar un producto nunca elimina pedidos ni detalles.
 
-`rutas_pedidos.py` toma el usuario_id de la identidad verificada. Para clientes
+`app/routers/pedidos.py` toma el usuario_id de la identidad verificada. Para clientes
 llama listar_propios/obtener_propio/eliminar_propio. Los filtros se aplican en
 SQL con parámetros `%s`, incluso en la consulta de detalles mediante JOIN.
 El admin usa explícitamente listar_todos/obtener_cualquiera/eliminar_cualquiera;
