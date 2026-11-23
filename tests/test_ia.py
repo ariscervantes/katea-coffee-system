@@ -7,7 +7,7 @@ import urllib.error
 import pytest
 from fastapi import HTTPException
 
-from app import main
+from app.integraciones import gemini
 
 
 class RespuestaFalsa:
@@ -43,9 +43,9 @@ def preparar(monkeypatch, efectos):
             raise efecto
         return RespuestaFalsa(efecto)
 
-    monkeypatch.setattr(main, "IA_URL", "http://externo.test")
-    monkeypatch.setattr(main, "IA_CLAVE", "")
-    monkeypatch.setattr(main.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(gemini, "IA_URL", "http://externo.test")
+    monkeypatch.setattr(gemini, "IA_CLAVE", "")
+    monkeypatch.setattr(gemini.urllib.request, "urlopen", urlopen)
     return llamadas
 
 
@@ -54,14 +54,14 @@ def test_reintenta_una_vez_tras_503(monkeypatch):
         error_http(503),
         respuesta_gemini({"sentimiento": "neutral", "respuesta": "Gracias"}),
     ])
-    assert main.preguntar_a_la_ia("instrucción") == {"sentimiento": "neutral", "respuesta": "Gracias"}
+    assert gemini.preguntar_a_la_ia("instrucción") == {"sentimiento": "neutral", "respuesta": "Gracias"}
     assert len(llamadas) == 2
 
 
 def test_no_reintenta_un_400(monkeypatch):
     llamadas = preparar(monkeypatch, [error_http(400)])
     with pytest.raises(HTTPException) as error:
-        main.preguntar_a_la_ia("instrucción")
+        gemini.preguntar_a_la_ia("instrucción")
     assert error.value.status_code == 502
     assert len(llamadas) == 1
 
@@ -69,7 +69,7 @@ def test_no_reintenta_un_400(monkeypatch):
 def test_no_reintenta_un_timeout(monkeypatch):
     llamadas = preparar(monkeypatch, [TimeoutError()])
     with pytest.raises(HTTPException) as error:
-        main.preguntar_a_la_ia("instrucción")
+        gemini.preguntar_a_la_ia("instrucción")
     assert error.value.status_code == 504
     assert len(llamadas) == 1
 
@@ -77,6 +77,6 @@ def test_no_reintenta_un_timeout(monkeypatch):
 def test_falla_siempre_termina_en_502(monkeypatch):
     llamadas = preparar(monkeypatch, [error_http(503), error_http(503)])
     with pytest.raises(HTTPException) as error:
-        main.preguntar_a_la_ia("instrucción")
+        gemini.preguntar_a_la_ia("instrucción")
     assert error.value.status_code == 502
     assert len(llamadas) == 2
