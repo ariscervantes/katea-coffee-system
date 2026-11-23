@@ -11,6 +11,7 @@ app/
   errores.py         formato uniforme de errores y respuestas OpenAPI
   seguridad.py       JWT, bcrypt y dependencias de sesión/rol
   db/conexion.py     configuración y conexión a MySQL
+  integraciones/     servicios externos: gemini.py (IA con timeout y reintento)
   modelos/           esquemas Pydantic de productos y pedidos
   repositorios/      acceso a datos: productos, pedidos y usuarios
   routers/           endpoints: auth (/login), productos y pedidos
@@ -104,7 +105,7 @@ inexistente: el mismo 404. El token no contiene contraseñas ni hashes.
 caracteres, sin campos extra). La API consulta el nombre, ID y rol del usuario
 autenticado y los incluye en el contexto enviado a Gemini; nunca acepta esos
 datos desde el cuerpo. Configurar `GEMINI_API_KEY` en el entorno (y opcionalmente
-`GEMINI_MODELO` o `EXTERNO_URL`) para usar la IA. La llamada reintenta una vez
+`GEMINI_MODELO`, `EXTERNO_URL` o `EXTERNO_TIMEOUT`, 5 s por omisión) para usar la IA. La llamada reintenta una vez
 ante 5xx/429, pero no ante 400, respuestas inválidas ni timeouts. Respuestas
 inesperadas de la IA dan 502; falta de configuración, 503; tiempo de espera
 agotado, 504.
