@@ -1,5 +1,5 @@
 {
-	"matricula": "20205116",
+	"matricula": "TU_MATRICULA",
 	"base": "http://127.0.0.1:8000",
 	"openapi": "/openapi.json",
 	"coleccion": "/productos",
@@ -36,15 +36,15 @@
 		"campo_token": "access_token",
 		"admin": {
 			"usuario": "dev_admin",
-			"clave": "12345678"
+			"clave": "REEMPLAZAR"
 		},
 		"usuario": {
 			"usuario": "dev_cliente1",
-			"clave": "123456789"
+			"clave": "REEMPLAZAR"
 		},
 		"otro": {
 			"usuario": "dev_cliente2",
-			"clave": "123456789"
+			"clave": "REEMPLAZAR"
 		}
 	},
 	"propio": {
