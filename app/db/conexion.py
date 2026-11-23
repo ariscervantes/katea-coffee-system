@@ -11,7 +11,8 @@ import pymysql
 from pymysql.cursors import DictCursor
 
 
-load_dotenv(Path(__file__).with_name(".env"))
+# app/db/conexion.py -> parents[2] es la raíz del proyecto, donde vive .env.
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 ESQUEMA_PRODUCTOS = """
 CREATE TABLE IF NOT EXISTS productos (
