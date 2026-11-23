@@ -18,3 +18,13 @@ evidencias/
 
 # Configuración U3S4 personal: matrícula y claves locales.
 prueba_U3S4.local.json
+
+# Configuración personal de los scripts del profesor (matrícula y claves).
+# Solo se versiona la plantilla pruebas/profesor/prueba.example.json.
+prueba.json
+**/prueba.json
+*.local.json
+
+# Archivos locales de herramientas de asistencia; no forman parte del proyecto.
+.claude/
+CLAUDE.md
