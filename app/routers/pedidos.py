@@ -7,10 +7,9 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from app.seguridad import Identidad, usuario_actual
 from app.modelos.productos import RespuestaError
 from app.modelos.pedidos import EntradaPedidosComentario, Pedido, PedidoEntrada, RespuestaComentario
-from app.repositorios.pedidos import (
-    ImporteFueraDeRango, ProductoNoDisponible, ProductoPedidoInexistente, RepositorioPedidos,
-)
+from app.repositorios.pedidos import RepositorioPedidos
 from app.repositorios.usuarios import RepositorioUsuarios
+from app.servicios.pedidos import ImporteFueraDeRango, ProductoNoDisponible, ProductoPedidoInexistente
 
 
 SesionActual = Annotated[Identidad, Depends(usuario_actual)]

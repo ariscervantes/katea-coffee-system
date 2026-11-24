@@ -4,6 +4,7 @@ from decimal import Decimal, localcontext
 
 from app.db.conexion import BaseDatos
 from app.modelos.pedidos import DetallePedido, Pedido, PedidoEntrada
+from app.servicios.pedidos import precio_de_compra, sumar_al_total
 
 ESQUEMA_PEDIDOS = """
 CREATE TABLE IF NOT EXISTS pedidos (
@@ -29,20 +30,6 @@ CREATE TABLE IF NOT EXISTS pedido_detalles (
         REFERENCES productos(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 """
-MAX_IMPORTE = Decimal("9" * 63 + ".99")
-
-
-class ProductoPedidoInexistente(Exception):
-    pass
-
-
-class ProductoNoDisponible(Exception):
-    pass
-
-
-class ImporteFueraDeRango(Exception):
-    pass
-
 
 class RepositorioPedidos:
     def __init__(self, base_datos: BaseDatos | None = None):
@@ -65,15 +52,9 @@ class RepositorioPedidos:
                     "SELECT id, precio, disponible FROM productos WHERE id = %s FOR UPDATE",
                     (item.producto_id,),
                 )
-                producto = cursor.fetchone()
-                if producto is None:
-                    raise ProductoPedidoInexistente
-                if not producto["disponible"]:
-                    raise ProductoNoDisponible
-                precio = Decimal(str(producto["precio"]))
-                total += precio * item.cantidad
-                if total > MAX_IMPORTE:
-                    raise ImporteFueraDeRango
+                # Reglas de negocio (app/servicios/pedidos.py) dentro de la misma transacción.
+                precio = precio_de_compra(cursor.fetchone())
+                total = sumar_al_total(total, precio, item.cantidad)
                 detalles.append(DetallePedido(producto_id=item.producto_id, cantidad=item.cantidad, precio_unitario=precio))
             cursor.execute(
                 "INSERT INTO pedidos (usuario_id, estado, total) VALUES (%s, %s, %s)",

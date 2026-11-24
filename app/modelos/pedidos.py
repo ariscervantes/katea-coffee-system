@@ -5,6 +5,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_serializer, model_validator
 
+from app.servicios.pedidos import verificar_productos_unicos
+
 Id = Annotated[int, Field(strict=True, gt=0, le=4294967295)]
 Cantidad = Annotated[int, Field(strict=True, gt=0, le=4294967295)]
 Comentario = Annotated[str, StringConstraints(strict=True, strip_whitespace=True, min_length=2, max_length=300)]
@@ -23,9 +25,8 @@ class PedidoEntrada(BaseModel):
 
     @model_validator(mode="after")
     def productos_unicos(self):
-        ids = [p.producto_id for p in self.productos]
-        if len(ids) != len(set(ids)):
-            raise ValueError("Cada producto debe aparecer una sola vez; usa cantidad")
+        # La regla vive en el servicio; su ProductoRepetido (ValueError) se vuelve 422 aquí.
+        verificar_productos_unicos([p.producto_id for p in self.productos])
         return self
 
 

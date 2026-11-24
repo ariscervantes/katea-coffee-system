@@ -17,9 +17,10 @@ from app.main import crear_app
 from app.modelos.pedidos import PedidoEntrada
 from app.repositorios.productos import RepositorioProductos
 from app.repositorios.pedidos import (
-    ESQUEMA_DETALLES, ESQUEMA_PEDIDOS, MAX_IMPORTE, RepositorioPedidos,
+    ESQUEMA_DETALLES, ESQUEMA_PEDIDOS, RepositorioPedidos,
 )
 from app.repositorios.usuarios import RepositorioUsuarios, Usuario
+from app.servicios.pedidos import MAX_IMPORTE
 
 VALIDO = {"productos": [{"producto_id": 1, "cantidad": 2}, {"producto_id": 3, "cantidad": 3}]}
 
