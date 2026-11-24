@@ -1,169 +1,177 @@
-# Katea — API de productos y pedidos
+# Katea · API de menú digital y pedidos
 
-Proyecto académico con FastAPI, Pydantic, MySQL 8 y PyMySQL. Incluye login JSON,
-roles y pedidos con control de dueño. QR, pagos y caja quedan para otra etapa.
+API para una cafetería que publica su menú digital y recibe pedidos en línea. Cualquier persona puede consultar el menú; los clientes inician sesión para hacer y revisar **sus propios** pedidos y dejar comentarios que una IA (Gemini) clasifica por sentimiento. El administrador mantiene el catálogo de productos y puede ver todos los pedidos.
 
-## Estructura
+- **Versión:** v1.0.0 (ver [CHANGELOG.md](CHANGELOG.md))
+- **Lenguaje:** Python · FastAPI, con MySQL 8
+- **Arquitectura:** [docs/arquitectura.md](docs/arquitectura.md)
+- **Decisiones de diseño:** [docs/decisiones/](docs/decisiones/)
 
-```text
-app/
-  main.py            crear_app(): FastAPI, CORS, lifespan e include_router
-  errores.py         formato uniforme de errores y respuestas OpenAPI
-  seguridad.py       JWT, bcrypt y dependencias de sesión/rol
-  db/conexion.py     configuración y conexión a MySQL
-  integraciones/     servicios externos: gemini.py (IA con timeout y reintento)
-  modelos/           esquemas Pydantic de productos y pedidos
-  repositorios/      acceso a datos: productos, pedidos y usuarios
-  routers/           endpoints: auth (/login), productos y pedidos
-tests/               suite propia (pytest)
-scripts/             generar contrato y crear cuentas de desarrollo
-pruebas/profesor/    scripts del profesor, sin modificar
-sql/  docs/  front/
+## Cómo correrla
+
+Requisitos: Python 3, Git y Docker (para MySQL). Todos los comandos se ejecutan **desde la raíz del repositorio**. Donde cambian, se muestra primero Windows (cmd) y luego bash (Linux/macOS).
+
+1. Clonar el repositorio:
+   ```
+   git clone https://github.com/ariscervantes/katea-coffee-system.git
+   cd katea-coffee-system
+   ```
+
+2. Crear un entorno virtual e instalar dependencias:
+   ```
+   :: Windows (cmd)
+   python -m venv .venv
+   .venv\Scripts\activate
+   python -m pip install -r requirements.txt
+   ```
+   ```bash
+   # bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   python -m pip install -r requirements.txt
+   ```
+
+3. Configurar las variables de entorno. Copia la plantilla y reemplaza en `.env` cada valor `REEMPLAZAR_...` por uno propio (ver la [tabla de variables](#variables-de-entorno)):
+   ```
+   :: Windows (cmd)
+   copy .env.example .env
+   ```
+   ```bash
+   # bash
+   cp .env.example .env
+   ```
+   Para `JWT_SECRETO` puedes generar un valor aleatorio con `python -c "import secrets; print(secrets.token_urlsafe(48))"` y pegarlo en `.env`. La API lee `.env` al arrancar; una variable definida en la terminal tiene prioridad sobre el archivo.
+
+4. Levantar MySQL y crear los usuarios de desarrollo:
+   ```
+   docker compose up -d --wait mysql
+   python scripts/crear_usuarios_desarrollo.py
+   ```
+   El script solo funciona con `KATEA_ENTORNO=desarrollo` (ya viene así en `.env.example`). Pide, sin mostrarlas en pantalla, las claves de tres cuentas: `dev_admin` (rol admin), `dev_cliente1` y `dev_cliente2` (rol cliente). No hay usuarios ni claves predeterminados. Las tablas se crean solas la primera vez que arranca la API.
+
+5. Arrancar la API:
+   ```
+   python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+   ```
+
+6. Abrir el contrato en http://127.0.0.1:8000/docs. Para el front, en **otra** terminal:
+   ```
+   cd front
+   python -m http.server 5500 --bind 127.0.0.1
+   ```
+   y abrir http://127.0.0.1:5500. No abras `front/index.html` con doble clic: el navegador lo trataría como origen `null` y la API lo rechaza por CORS.
+
+## Variables de entorno
+
+Están todas en [.env.example](.env.example), con valores de ejemplo. **Ninguna clave real va en el repositorio**: `.env` está en `.gitignore`.
+
+| Variable | Para qué sirve | Obligatoria |
+|---|---|---|
+| `DB_HOST` | Host donde escucha MySQL (`127.0.0.1`). | Sí |
+| `DB_PORT` | Puerto de MySQL; `compose.yaml` lo publica en `13306`. | Sí |
+| `DB_USER` | Usuario de MySQL que usa la API (sin privilegios de administrador). | Sí |
+| `DB_PASSWORD` | Clave de ese usuario. | Sí |
+| `DB_NAME` | Nombre de la base de datos (`katea`). | Sí |
+| `MYSQL_ROOT_PASSWORD` | Clave de root de MySQL; solo la usa `compose.yaml` al crear el contenedor. | Sí, para Docker |
+| `JWT_SECRETO` | Firma los tokens de sesión. Debe ser aleatorio y de al menos 32 bytes; con el valor de ejemplo no se puede iniciar sesión ni usar rutas protegidas. | Sí |
+| `CORS_ORIGENES` | Páginas que pueden usar la API desde el navegador, separadas por comas (nunca `*`). Por omisión, el front en el puerto 5500. | No |
+| `KATEA_ENTORNO` | Debe valer `desarrollo` para permitir `scripts/crear_usuarios_desarrollo.py`. | Solo para crear usuarios |
+| `GEMINI_API_KEY` | Clave de la IA que clasifica comentarios. Sin ella, `POST /pedidos/comentario` responde 503. | Para comentarios |
+| `GEMINI_MODELO` | Modelo de Gemini que se consulta. | No |
+| `EXTERNO_URL` | A dónde se envía la petición de IA. Para las pruebas apunta al simulador (`http://127.0.0.1:9000`). | No |
+| `EXTERNO_TIMEOUT` | Segundos máximos de espera por intento de IA (5 por omisión); si se agota, 504. | No |
+
+## Ejemplos de uso
+
+El flujo típico es: iniciar sesión, guardar el token y mandarlo en el encabezado `Authorization` de las rutas protegidas. Sustituye `TU_CLAVE` por la clave que diste al crear el usuario y `TOKEN` por el `access_token` recibido.
+
+**1. Iniciar sesión y obtener el token** (responde `{"access_token": "...", "token_type": "bearer"}`, válido 30 minutos):
+```
+:: Windows (cmd)
+curl -X POST http://127.0.0.1:8000/login -H "Content-Type: application/json" -d "{\"usuario\": \"dev_cliente1\", \"clave\": \"TU_CLAVE\"}"
+set TOKEN=pega_aqui_el_access_token
+```
+```bash
+# bash
+curl -X POST http://127.0.0.1:8000/login -H 'Content-Type: application/json' -d '{"usuario": "dev_cliente1", "clave": "TU_CLAVE"}'
+TOKEN=pega_aqui_el_access_token
 ```
 
-## Preparación
-
-La guía reproducible para el equipo está en [docs/guias/u3s4.md](docs/guias/u3s4.md): instala
-dependencias, configura un MySQL de desarrollo, crea cuentas y ejecuta dos
-corridas con la matrícula de cada integrante.
-
+**2. Usar una ruta protegida: ver mis pedidos** (un cliente solo ve los suyos; sin token responde 401):
+```
+:: Windows (cmd)
+curl http://127.0.0.1:8000/pedidos -H "Authorization: Bearer %TOKEN%"
+```
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m pip check
+# bash
+curl http://127.0.0.1:8000/pedidos -H "Authorization: Bearer $TOKEN"
 ```
 
-Configurar DB_HOST, DB_PORT, DB_USER, DB_PASSWORD y DB_NAME en el entorno o en
-`.env` local, tomando `.env.example` como plantilla. JWT_SECRETO debe ser aleatorio,
-de al menos 32 bytes, y conservarse entre reinicios; no hay secreto predeterminado.
-No versionar `.env` ni credenciales. La guía incluye generación sin imprimirlo.
-
-`compose.yaml` ofrece MySQL 8, puerto local 13306, proyecto Docker katea y volumen
-katea_mysql_data. Completar también MYSQL_ROOT_PASSWORD antes de iniciarlo:
-
-```bash
-docker compose up -d --wait mysql
-python scripts/crear_usuarios_desarrollo.py
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+**3. Crear un pedido** (el dueño sale del token y los precios de la base de datos; responde 201 con el total calculado):
 ```
-
-El comando de cuentas requiere KATEA_ENTORNO=desarrollo y pide claves sin eco
-para dev_admin, dev_cliente1 y dev_cliente2. Las inserta juntas con hashes bcrypt;
-si alguna existe, revierte sin reemplazar datos. No hay cuentas automáticas.
-
-MySQL crea la base/usuario de Compose solo al inicializar un volumen nuevo;
-cambiar `.env` después no modifica claves existentes. No eliminar volúmenes
-para cambiar una contraseña. Al arrancar, la API crea tablas ausentes, no la base.
-Las conexiones usan commit/rollback/cierre y SQL con `%s` y valores separados.
-
-## Front y CORS
-
-Para servir el front, desde la raíz ejecuta `cd front` y luego
-`python -m http.server 5500 --bind 127.0.0.1`; abre
-http://127.0.0.1:5500. No abras `index.html` con doble clic: su origen sería
-`null`, que la API no permite. Inicia sesión como `dev_admin` (admin), creado con
-`KATEA_ENTORNO=desarrollo python scripts/crear_usuarios_desarrollo.py`.
-
-`CORS_ORIGENES` define una lista de orígenes permitidos separados por comas.
-Por defecto es `http://127.0.0.1:5500,http://localhost:5500`, como indica
-`app/main.py` y se configura en `.env.example`. No se usa `*`.
-
-Para correr las pruebas del profesor con el simulador, usa tres terminales:
-
+:: Windows (cmd)
+curl -X POST http://127.0.0.1:8000/pedidos -H "Authorization: Bearer %TOKEN%" -H "Content-Type: application/json" -d "{\"productos\": [{\"producto_id\": 1, \"cantidad\": 2}]}"
+```
 ```bash
+# bash
+curl -X POST http://127.0.0.1:8000/pedidos -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"productos": [{"producto_id": 1, "cantidad": 2}]}'
+```
+Para que funcione debe existir un producto disponible con ese `producto_id`; los crea el administrador con `POST /productos` (puedes hacerlo desde `/docs` con el botón **Authorize**).
+
+## Contrato y errores
+
+- Contrato OpenAPI interactivo: http://127.0.0.1:8000/docs (también `/redoc`).
+- Contrato exportado: [docs/openapi.json](docs/openapi.json). Se regenera con `python scripts/generar_contrato.py`.
+- Errores: todos responden `{"error": "...", "detalles": [...]}`. El catálogo de códigos (400, 401, 403, 404, 409, 422, 502, 503, 504, 500) está en [docs/errores.md](docs/errores.md).
+
+## Cómo probarla
+
+**Pruebas automáticas (pytest).** No necesitan MySQL ni Gemini: usan repositorios en memoria y dobles de prueba.
+```
+python -m pytest -q
+```
+Resultado de la versión v1.0.0: **252 pruebas aprobadas** (`252 passed`).
+
+**Pruebas de caja negra con `probar_api.py` y el simulador de IA.** Hablan por HTTP con la API real, así que necesitan MySQL y los usuarios de desarrollo del paso 4. Antes, copia `pruebas/profesor/prueba.example.json` como `pruebas/profesor/prueba.json` y complétalo con tus datos; esa copia es personal y Git la ignora. Usa tres terminales:
+```
+:: Terminal 1: simulador de la IA (puerto 9000)
 python pruebas/profesor/simulador.py
-EXTERNO_URL=http://127.0.0.1:9000 GEMINI_API_KEY=valor_de_prueba python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+:: Terminal 2: la API apuntando al simulador (Windows cmd)
+set EXTERNO_URL=http://127.0.0.1:9000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+:: Terminal 3: las pruebas
 python pruebas/profesor/probar_api.py pruebas/profesor/prueba.json
 ```
+En bash, la terminal 2 queda en una línea: `EXTERNO_URL=http://127.0.0.1:9000 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`. La prueba de persistencia queda pendiente en la primera corrida: reinicia solo la API (Ctrl+C y vuelve a arrancarla) y corre `probar_api.py` otra vez.
 
-`simulador.py` y `probar_api.py` son archivos del profesor y viven en
-`pruebas/profesor/`. `pruebas/profesor/prueba.json` es configuración local de pruebas y no se sube al repositorio.
+## Anatomía de mi API
 
-## Rutas y permisos
+<!-- Pegar aquí lo que copia el botón "Copiar mi lista" del mapa interactivo. -->
 
-| Operación | Acceso | Éxito |
-| --- | --- | --- |
-| POST `/login` | Público, credenciales JSON | 200, access_token y token_type |
-| GET `/productos` | Público, incluye no disponibles | 200 |
-| GET `/productos/{id}` | Público | 200 |
-| POST `/productos` | Admin | 201 |
-| PUT `/productos/{id}` | Admin, reemplazo completo | 200 |
-| DELETE `/productos/{id}` | Admin | 204 sin cuerpo |
-| GET `/pedidos` | Cliente: propios; admin: todos | 200 |
-| GET `/pedidos/{id}` | Cliente: propio; admin: cualquiera | 200 |
-| POST `/pedidos` | Autenticado; dueño desde token | 201 |
-| POST `/pedidos/comentario` | Autenticado; usuario desde token | 200, sentimiento y respuesta de IA |
-| DELETE `/pedidos/{id}` | Cliente: propio; admin: cualquiera | 204 sin cuerpo |
-
-JWT HS256 con identidad, rol y vencimiento de 30 minutos; contraseñas con bcrypt,
-sal aleatoria y costo 12. Token ausente/inválido/vencido: 401 con
-WWW-Authenticate Bearer. Cliente que escribe productos: 403. Pedido ajeno o
-inexistente: el mismo 404. El token no contiene contraseñas ni hashes.
-
-`POST /pedidos/comentario` exige sesión y recibe `{"comentario": "..."}` (2–300
-caracteres, sin campos extra). La API consulta el nombre, ID y rol del usuario
-autenticado y los incluye en el contexto enviado a Gemini; nunca acepta esos
-datos desde el cuerpo. Configurar `GEMINI_API_KEY` en el entorno (y opcionalmente
-`GEMINI_MODELO`, `EXTERNO_URL` o `EXTERNO_TIMEOUT`, 5 s por omisión) para usar la IA. La llamada reintenta una vez
-ante 5xx/429, pero no ante 400, respuestas inválidas ni timeouts. Respuestas
-inesperadas de la IA dan 502; falta de configuración, 503; tiempo de espera
-agotado, 504.
-
-## Reglas de datos
-
-Productos exige seis campos y rechaza extras, incluido id. Nombre: 2–80 y
-descripción: 5–200 caracteres tras recortar extremos. Precio: número positivo,
-sin textos/booleanos y máximo dos decimales. Se convierte a Decimal después de
-la lectura JSON normal, sin preservar precisión arbitraria previa a validar.
-Imagen: sufijo literal .jpg/.jpeg/.png/.webp, nombre no vacío y sin CR/LF; no se
-descarga. Disponible: booleano estricto. Preparación: frio/caliente/no_aplica.
-Duplicados: nombre normalizado con strip/casefold y preparación; conflicto 409.
-PUT excluye al propio producto y puede repetirse sin cambiar el resultado.
-
-Pedidos recibe productos no vacíos con producto_id y cantidad entera positiva;
-rechaza dueño, precios, total, estado y otros campos extra. Lee precios y
-disponibilidad desde MySQL; guarda precio unitario histórico y total en una
-transacción. Un fallo revierte cabecera y detalles. Los importes de pedidos se
-devuelven como textos con dos decimales; productos conserva precio numérico.
-Lista vacía, cantidad inválida o producto inexistente en el cuerpo: 422.
-Producto no disponible: 409. Borrar un producto referenciado por pedidos: 409;
-puede desactivarse para nuevas compras. Borrar expresamente un pedido autorizado
-elimina sus detalles. Ver [docs/guias/pedidos.md](docs/guias/pedidos.md).
-
-Errores uniformes: `{"error": "...", "detalles": [...]}`. JSON mal formado: 400;
-datos inválidos: 422; fallo interno: 500 genérico.
-
-## Contrato y pruebas
-
-Swagger: `/docs`, ReDoc: `/redoc`, esquema: `/openapi.json`. Authorize permite
-usar Bearer en las rutas protegidas. Contrato exportado: `docs/openapi.json`.
-
-```bash
-PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider
-python scripts/generar_contrato.py
-python pruebas/profesor/probar_externo.py pruebas/profesor/prueba_U3S4.local.json
+```
+[COMPLETAR: pegar la lista del botón "Copiar mi lista"]
 ```
 
-`probar_externo.py` valida el endpoint configurado en la sección `externo` de
-`prueba.json`/`prueba_U3S4.local.json`; reutiliza el login de `auth` si
-`externo.token` indica admin, usuario u otro.
+## REST y SOAP en mi proyecto
 
-La suite propia usa repositorios aislados y un adaptador SQL en memoria, sin
-conectar a MySQL real. Resultado previo registrado: 202 aprobadas.
-La integración previa con MySQL 8.0.46 aislado comprobó hashes/login, permisos,
-propiedad, DECIMAL histórico, FK RESTRICT/CASCADE y rollback ante fallo de detalle.
-U3S4 obtuvo 19/20 con persistencia pendiente y 20/20 tras reiniciar solo la API.
-No son resultados de una nueva ejecución personal de cada integrante.
-Faltan pruebas de concurrencia y carga.
+[COMPLETAR]
 
-`probar_api_U3S4.py` es la copia auténtica de las 20 pruebas, sin cambios y sin
-sobrescribir probar_api.py/probar_api_U3S3.py anteriores. Usar una copia personal
-ignorada de `pruebas/profesor/prueba_U3S4.example.json`; instrucciones completas de cuentas,
-producto soporte, matrícula, reinicio y respaldo por ronda en
-[docs/guias/u3s4.md](docs/guias/u3s4.md). Los scripts U3S3 no hacen login y sus resultados
-anteriores son históricos; no validan las escrituras protegidas actuales.
+## Equipo y reflexiones
 
-Configuración personal, reportes, capturas, evidencias y estado temporal quedan
-fuera de Git. Conservar los cambios personales de prueba.json sin incluirlos en
-commits. El contexto del equipo está en [docs/CONTEXTO_PROYECTO.md](docs/CONTEXTO_PROYECTO.md).
+| Integrante | Qué hizo |
+|---|---|
+| Arisbeth Cervantes | [COMPLETAR] |
+| Diego Verduzco | [COMPLETAR] |
+| Lorenzo Chávez | [COMPLETAR] |
+
+**Arisbeth Cervantes:** [COMPLETAR: reflexión con sus propias palabras]
+
+**Diego Verduzco:** [COMPLETAR: reflexión con sus propias palabras]
+
+**Lorenzo Chávez:** [COMPLETAR: reflexión con sus propias palabras]
+
+---
+
+Más documentación: guías de [autenticación](docs/guias/autenticacion.md) y [pedidos](docs/guias/pedidos.md), y el historial de actividades del curso en [docs/guias/](docs/guias/).
