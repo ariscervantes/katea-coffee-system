@@ -28,3 +28,5 @@ y el proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Revocación anticipada de JWT: hoy un token sigue siendo válido hasta que expira.
 - Pruebas de concurrencia y de carga.
 - Sustituir las contraseñas de desarrollo en `.env` por un gestor de secretos.
+- Pantalla de pedidos en el front (hoy los pedidos se consumen desde /docs).
+- Límite de intentos de login y de peticiones por minuto.

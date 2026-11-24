@@ -149,10 +149,99 @@ En bash, la terminal 2 queda en una línea: `EXTERNO_URL=http://127.0.0.1:9000 p
 
 ## Anatomía de mi API
 
-<!-- Pegar aquí lo que copia el botón "Copiar mi lista" del mapa interactivo. -->
-
 ```
-[COMPLETAR: pegar la lista del botón "Copiar mi lista"]
+Anatomía de mi API · lista de revisión (43 de 43)
+
+0 · Cliente (2/2)
+  [x] Mi proyecto tiene un cliente que consume la API: una página, una app o un script.
+  [x] Puedo hacer una acción en el cliente y mostrar la petición y la respuesta en la pestaña Red (F12).
+  En la presentación: Abran su front y hagan una acción en vivo. Con F12 → Red, muestren la petición que salió y la respuesta que llegó.
+
+1 · Petición HTTP (3/3)
+  [x] Mis rutas nombran cosas (/tareas, /tareas/7), no acciones (/crearTarea).
+  [x] Cada operación usa el método correcto: GET lee, POST crea, PUT o PATCH modifica, DELETE borra.
+  [x] Tengo la ficha de endpoints: método, ruta, qué recibe y qué responde.
+  En la presentación: Muestren su ficha de endpoints o /docs y expliquen en una frase qué hace cada ruta.
+
+2 · CORS (3/3)
+  [x] Configuré CORS con una lista de orígenes, no con *.
+  [x] Authorization y Content-Type están en los encabezados permitidos.
+  [x] CORS va antes de revisar el token.
+  En la presentación: Abran su front desde su origen (por ejemplo, el puerto 5500) con F12 abierto: la consola sin errores de CORS.
+
+3 · Autenticación (3/3)
+  [x] Las contraseñas se guardan con hash (bcrypt o password_hash).
+  [x] El login regresa un token JWT con vencimiento.
+  [x] Sin token, o con un token alterado, la API responde 401.
+  En la presentación: Hagan una petición a una ruta protegida sin token (401) y luego con token (200).
+
+4 · Autorización (2/2)
+  [x] Hay al menos dos roles y una acción que un rol no puede hacer (403).
+  [x] Las consultas de recursos propios filtran por el usuario del token (WHERE id = ? AND usuario = ?).
+  En la presentación: Con el usuario A pidan un recurso del usuario B: debe responder 404. Con un rol sin permiso intenten borrar: 403.
+
+5 · Validación (3/3)
+  [x] Valido campos obligatorios, tipo, formato y rango.
+  [x] Un dato inválido responde 422 y dice qué campo falló.
+  [x] Un duplicado o una regla rota responde 409.
+  En la presentación: Manden un dato inválido desde su front y muestren que el error aparece en el campo correcto.
+
+6 · Endpoint / controlador (2/2)
+  [x] Tengo el CRUD completo de mi recurso principal.
+  [x] Cada operación responde con su código: 200, 201, 204 o 404.
+  En la presentación: Recorran el CRUD de su recurso principal en /docs, Postman o su front.
+
+7 · Servicio / lógica de negocio (2/2)
+  [x] Identifico al menos una regla de negocio propia de mi proyecto.
+  [x] La regla está en una función aparte, no revuelta con el manejo de HTTP.
+  En la presentación: Expliquen su regla de negocio y muestren el caso en que dice que no (409).
+
+7b · Integraciones externas (5/5)
+  [x] Mi API consume al menos un servicio externo.
+  [x] La llamada tiene un tiempo máximo de espera (timeout).
+  [x] Si el servicio falla o tarda, responde 502 o 504 con un mensaje claro.
+  [x] La clave del servicio está en una variable de entorno.
+  [x] Puedo explicar en qué caso se usaría SOAP en lugar de REST (por ejemplo, el SAT).
+  En la presentación: Muestren la integración funcionando y luego la falla controlada: sin clave (503) o con el servicio caído (502 o 504).
+
+8 · Persistencia (2/2)
+  [x] Los datos se guardan en una base de datos y sobreviven al reinicio.
+  [x] Todas mis consultas usan parámetros (?), ninguna pega datos al texto del SQL.
+  En la presentación: Reinicien la API en vivo y muestren que los datos siguen ahí. Enseñen una de sus consultas con ?.
+
+9 · Respuesta HTTP (2/2)
+  [x] Todos mis errores salen en JSON con el mismo formato: {"error": ..., "detalles": [...]}.
+  [x] Ningún error muestra trazas, rutas de archivos ni SQL.
+  En la presentación: Provoquen dos errores distintos y muestren que ambos llegan con el mismo formato JSON.
+
+Configuración base (3/3)
+  [x] Secretos y claves (JWT, IA, base de datos) se leen de variables de entorno, no están escritos en el código.
+  [x] En mi repositorio de GitHub no hay ninguna clave.
+  [x] Mi README dice qué variables hay que configurar.
+  En la presentación: Muestren dónde lee su código las variables de entorno y busquen en vivo en su repositorio que no haya ninguna clave.
+
+Pruebas automáticas (2/2)
+  [x] Tengo pruebas automáticas (probar_api.py, una colección de Postman o similar).
+  [x] Las pruebas pasan antes de entregar.
+  En la presentación: Corran sus pruebas en vivo y comenten el resultado.
+
+Documentación (6/6)
+  [x] Mi README explica qué es, cómo correrla en pocos pasos, qué variables configurar y cómo probarla.
+  [x] Mi API publica su contrato (OpenAPI en /docs u openapi.yaml).
+  [x] Tengo .env.example con las variables de entorno, sin valores secretos.
+  [x] Tengo docs/arquitectura.md con el diagrama C4 de contenedores: página, API, base de datos y servicio externo.
+  [x] Tengo CHANGELOG.md con lo que trae la versión v1.0.0.
+  [x] Recomendado: 2 decisiones explicadas (ADR) en docs/decisiones/ y el catálogo de errores en docs/errores.md.
+  En la presentación: Abran su repositorio en GitHub: el README y el diagrama de arquitectura. Con el diagrama expliquen qué parte de su sistema está distribuida y cómo se comunican las piezas.
+
+Timeout e idempotencia (2/2)
+  [x] Sé qué operaciones de mi API se pueden repetir sin riesgo y cuáles no.
+  [x] Si reintento llamadas externas, solo es ante fallas pasajeras (429, 5xx o timeout).
+  En la presentación: Expliquen qué pasaría en su proyecto si el usuario le da doble clic a "Guardar".
+
+Seguridad en capas (1/1)
+  [x] Puedo decir qué riesgo del OWASP API Top 10 evita cada capa de mi API.
+  En la presentación: Cierren la presentación con la tabla “riesgo → cómo lo evita mi API”.
 ```
 
 ## REST y SOAP en mi proyecto
@@ -163,15 +252,15 @@ Katea usa REST: expone recursos como `/productos` y `/pedidos`, intercambia JSON
 
 | Integrante | Qué hizo |
 |---|---|
-| Arisbeth Cervantes | [COMPLETAR] |
-| Diego Verduzco | [COMPLETAR] |
-| Lorenzo Chávez | [COMPLETAR] |
+| Arisbeth Cervantes | Reorganizó el proyecto en la estructura app/ por capas y escribió la documentación de entrega (README, arquitectura C4, errores, decisiones, seguridad y CHANGELOG). En la presentación explica el cliente, el CRUD, la regla de negocio, la persistencia, las pruebas y el cierre. |
+| Diego Verduzco | Explica y defiende la autenticación (bcrypt y JWT), la autorización por rol, la validación de datos y el formato único de errores. |
+| Lorenzo Chávez | Explica y defiende CORS y la integración con Gemini (timeout, reintento y errores 502, 503 y 504). |
 
-**Arisbeth Cervantes:** [COMPLETAR: reflexión con sus propias palabras]
+**Arisbeth Cervantes:** Durante el proyecto me costó identificar los códigos de error de una API REST y entender el CRUD de la API. Gracias a eso ahora puedo explicar el flujo completo de crear un producto o un pedido. Para crear un producto se manda un POST a `/productos` con nombre, descripción, precio, `imagen_url`, disponible y preparación; el `id` lo asigna la base de datos, y se necesita el token de un usuario con rol admin. Si tuviera más tiempo, puliría el login para limitar los intentos de sesión repetidos.
 
-**Diego Verduzco:** [COMPLETAR: reflexión con sus propias palabras]
+**Diego Verduzco:** Con lo anterior visto vemos que la seguridad no es un agregado más, sino la base de la API: separar quién eres de qué puedes hacer, exigir tokens cortos y bien estructurados, aislar los datos por usuario y devolver respuestas de error claras y consistentes (como el formato de "error" y "detalles" y los códigos HTTP adecuados) hace que el sistema sea más fácil de mantener y difícil de atacar.
 
-**Lorenzo Chávez:** [COMPLETAR: reflexión con sus propias palabras]
+**Lorenzo Chávez:** La API no solo responde a quien la usa, también tiene que saber comunicarse con lo que no controla: limitar con CORS qué páginas pueden usarla desde el navegador, sin abrirla a cualquier origen, y tratar a un servicio externo como Gemini con desconfianza y ponerle un tiempo máximo de espera, reintentar solo cuando el error es temporal y es seguro repetir la petición, validar lo que responde y devolver errores claros (502, 503 o 504) cuando algo falla, esto lo hace confiable aunque haya cosas por fuera que no lo son.
 
 ---
 
