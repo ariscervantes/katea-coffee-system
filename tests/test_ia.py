@@ -110,12 +110,11 @@ def test_cada_intento_usa_el_timeout_configurado(monkeypatch):
     assert [timeout for _, timeout in llamadas] == [2.5, 2.5]
 
 
-def test_externo_timeout_vale_5_por_omision_y_rechaza_valores_invalidos(monkeypatch):
+def test_externo_timeout_vale_5_por_omision_o_si_es_invalido(monkeypatch):
     monkeypatch.delenv("EXTERNO_TIMEOUT", raising=False)
     assert gemini._timeout_desde_entorno() == 5
     monkeypatch.setenv("EXTERNO_TIMEOUT", "1.5")
     assert gemini._timeout_desde_entorno() == 1.5
-    for invalido in ("abc", "0", "-3"):
+    for invalido in ("abc", "", "0", "-3"):
         monkeypatch.setenv("EXTERNO_TIMEOUT", invalido)
-        with pytest.raises(RuntimeError):
-            gemini._timeout_desde_entorno()
+        assert gemini._timeout_desde_entorno() == 5

@@ -18,17 +18,16 @@ from fastapi import HTTPException
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 URL_GEMINI = "https://generativelanguage.googleapis.com"
+TIMEOUT_POR_OMISION = 5.0
 
 
 def _timeout_desde_entorno() -> float:
-    valor = os.environ.get("EXTERNO_TIMEOUT", "5")
+    """Lee EXTERNO_TIMEOUT; si falta, no es número o no es positivo, usa 5 segundos."""
     try:
-        segundos = float(valor)
+        segundos = float(os.environ.get("EXTERNO_TIMEOUT", TIMEOUT_POR_OMISION))
     except ValueError:
-        raise RuntimeError("EXTERNO_TIMEOUT debe ser un número de segundos") from None
-    if segundos <= 0:
-        raise RuntimeError("EXTERNO_TIMEOUT debe ser mayor que 0")
-    return segundos
+        return TIMEOUT_POR_OMISION
+    return segundos if segundos > 0 else TIMEOUT_POR_OMISION
 
 
 # Único lugar donde se leen las variables del servicio externo. La clave nunca va en el código.
