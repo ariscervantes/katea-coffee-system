@@ -59,3 +59,34 @@ def sumar_al_total(total: Decimal, precio: Decimal, cantidad: int) -> Decimal:
     if nuevo_total > MAX_IMPORTE:
         raise ImporteFueraDeRango
     return nuevo_total
+
+
+class PedidoNoEncontrado(Exception):
+    """El pedido no existe o pertenece a otro cliente: ambos casos se ven igual."""
+
+
+def ve_todos(rol: str) -> bool:
+    """Solo admin tiene acceso global; cualquier otro rol queda limitado a lo propio."""
+    return rol == "admin"
+
+
+def crear_pedido(repositorio: RepositorioPedidos, entrada: PedidoEntrada, usuario_id: int) -> Pedido:
+    """El dueño siempre es quien hizo la petición (viene del token, no del cuerpo)."""
+    return repositorio.crear(entrada, usuario_id)
+
+
+def listar_pedidos(repositorio: RepositorioPedidos, usuario_id: int, rol: str) -> list[Pedido]:
+    return repositorio.listar_todos() if ve_todos(rol) else repositorio.listar_propios(usuario_id)
+
+
+def consultar_pedido(repositorio: RepositorioPedidos, id: int, usuario_id: int, rol: str) -> Pedido:
+    pedido = repositorio.obtener_cualquiera(id) if ve_todos(rol) else repositorio.obtener_propio(id, usuario_id)
+    if pedido is None:
+        raise PedidoNoEncontrado
+    return pedido
+
+
+def eliminar_pedido(repositorio: RepositorioPedidos, id: int, usuario_id: int, rol: str) -> None:
+    eliminado = repositorio.eliminar_cualquiera(id) if ve_todos(rol) else repositorio.eliminar_propio(id, usuario_id)
+    if not eliminado:
+        raise PedidoNoEncontrado

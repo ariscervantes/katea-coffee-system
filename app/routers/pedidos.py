@@ -9,7 +9,10 @@ from app.modelos.productos import RespuestaError
 from app.modelos.pedidos import EntradaPedidosComentario, Pedido, PedidoEntrada, RespuestaComentario
 from app.repositorios.pedidos import RepositorioPedidos
 from app.repositorios.usuarios import RepositorioUsuarios
-from app.servicios.pedidos import ImporteFueraDeRango, ProductoNoDisponible, ProductoPedidoInexistente
+from app.servicios.pedidos import (
+    ImporteFueraDeRango, PedidoNoEncontrado, ProductoNoDisponible, ProductoPedidoInexistente,
+    consultar_pedido, crear_pedido, eliminar_pedido, listar_pedidos,
+)
 
 
 SesionActual = Annotated[Identidad, Depends(usuario_actual)]
@@ -71,16 +74,16 @@ def rutas_pedidos(
 
     @router.get("", response_model=list[Pedido], description="Cliente: solo propios. Admin: todos.")
     def listar(yo: SesionActual) -> list[Pedido]:
-        return repositorio.listar_todos() if yo.rol == "admin" else repositorio.listar_propios(yo.id)
+        return listar_pedidos(repositorio, yo.id, yo.rol)
 
     @router.get("/{id}", response_model=Pedido, responses={
         404: error("Pedido inexistente o ajeno"), 422: error("ID inválido"),
     })
     def consultar(id: int, yo: SesionActual) -> Pedido:
-        pedido = repositorio.obtener_cualquiera(id) if yo.rol == "admin" else repositorio.obtener_propio(id, yo.id)
-        if pedido is None:
-            raise HTTPException(404, "Pedido no encontrado")
-        return pedido
+        try:
+            return consultar_pedido(repositorio, id, yo.id, yo.rol)
+        except PedidoNoEncontrado:
+            raise HTTPException(404, "Pedido no encontrado") from None
 
     @router.post("", response_model=Pedido, status_code=201, responses={
         400: error("JSON mal formado"),
@@ -89,7 +92,7 @@ def rutas_pedidos(
     }, description="El dueño se obtiene del token; precios y total se calculan en una transacción. Estado inicial pendiente.")
     def crear(entrada: PedidoEntrada, yo: SesionActual) -> Pedido:
         try:
-            return repositorio.crear(entrada, yo.id)
+            return crear_pedido(repositorio, entrada, yo.id)
         except ProductoPedidoInexistente:
             raise HTTPException(422, "Producto no encontrado") from None
         except ProductoNoDisponible:
@@ -101,9 +104,10 @@ def rutas_pedidos(
         404: error("Pedido inexistente o ajeno"), 422: error("ID inválido"),
     })
     def eliminar(id: int, yo: SesionActual) -> Response:
-        eliminado = repositorio.eliminar_cualquiera(id) if yo.rol == "admin" else repositorio.eliminar_propio(id, yo.id)
-        if not eliminado:
-            raise HTTPException(404, "Pedido no encontrado")
+        try:
+            eliminar_pedido(repositorio, id, yo.id, yo.rol)
+        except PedidoNoEncontrado:
+            raise HTTPException(404, "Pedido no encontrado") from None
         return Response(status_code=204)
 
     return router
