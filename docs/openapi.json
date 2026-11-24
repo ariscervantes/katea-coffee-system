@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Katea — API de productos",
+    "title": "Katea — API de productos y pedidos",
     "version": "1.0.0"
   },
   "paths": {

@@ -39,7 +39,7 @@ def crear_app(
         ordenes.inicializar()
         yield
 
-    app = FastAPI(title="Katea — API de productos", version="1.0.0", lifespan=ciclo_vida)
+    app = FastAPI(title="Katea — API de productos y pedidos", version="1.0.0", lifespan=ciclo_vida)
     # No usar "*": el navegador debe limitar el acceso a los orígenes del front.
     origenes_cors = os.environ.get(
         "CORS_ORIGENES", "http://127.0.0.1:5500,http://localhost:5500"
