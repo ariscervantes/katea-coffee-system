@@ -11,7 +11,7 @@ from app.repositorios.pedidos import RepositorioPedidos
 from app.repositorios.usuarios import RepositorioUsuarios
 from app.servicios.pedidos import (
     ImporteFueraDeRango, PedidoNoEncontrado, ProductoNoDisponible, ProductoPedidoInexistente,
-    consultar_pedido, crear_pedido, eliminar_pedido, listar_pedidos,
+    RespuestaIAInvalida, consultar_pedido, crear_pedido, eliminar_pedido, listar_pedidos, validar_respuesta_ia,
 )
 
 
@@ -59,18 +59,12 @@ def rutas_pedidos(
             + f"Datos del cliente autenticado: {datos_del_cliente(yo, usuarios)}.\n"
             + f"Comentario del cliente: {datos.comentario}"
         )
-        ia = preguntar_ia(instruccion)
-        if (
-            not isinstance(ia, dict)
-            or ia.get("sentimiento") not in ("positivo", "neutral", "negativo")
-            or not isinstance(ia.get("respuesta"), str)
-            or not ia["respuesta"].strip()
-        ):
-            raise HTTPException(502, "La IA respondió algo inesperado.")
-        return RespuestaComentario(
-            sentimiento=ia["sentimiento"],
-            respuesta=ia["respuesta"].strip()[:200],
-        )
+        ia = preguntar_ia(instruccion)  # Sus fallos ya llegan como 502/503/504.
+        try:
+            datos = validar_respuesta_ia(ia)
+        except RespuestaIAInvalida:
+            raise HTTPException(502, "La IA respondió algo inesperado.") from None
+        return RespuestaComentario(**datos)
 
     @router.get("", response_model=list[Pedido], description="Cliente: solo propios. Admin: todos.")
     def listar(yo: SesionActual) -> list[Pedido]:

@@ -90,3 +90,19 @@ def eliminar_pedido(repositorio: RepositorioPedidos, id: int, usuario_id: int, r
     eliminado = repositorio.eliminar_cualquiera(id) if ve_todos(rol) else repositorio.eliminar_propio(id, usuario_id)
     if not eliminado:
         raise PedidoNoEncontrado
+
+
+class RespuestaIAInvalida(Exception):
+    """La IA contestó algo que no tiene la forma {"sentimiento", "respuesta"} esperada."""
+
+
+def validar_respuesta_ia(ia: object) -> dict:
+    """Acepta solo un sentimiento conocido y una respuesta no vacía; la recorta a 200 caracteres."""
+    if (
+        not isinstance(ia, dict)
+        or ia.get("sentimiento") not in ("positivo", "neutral", "negativo")
+        or not isinstance(ia.get("respuesta"), str)
+        or not ia["respuesta"].strip()
+    ):
+        raise RespuestaIAInvalida
+    return {"sentimiento": ia["sentimiento"], "respuesta": ia["respuesta"].strip()[:200]}
