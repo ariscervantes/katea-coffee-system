@@ -24,8 +24,9 @@ def rutas_productos(almacen: RepositorioProductos) -> APIRouter:
         return producto
 
     def comprobar_duplicado(entrada: ProductoEntrada, excluir_id: int | None = None) -> None:
+        # Excepción de dominio: la misma que lanza el repositorio si MySQL detecta el duplicado.
         if almacen.existe_duplicado(entrada, excluir_id=excluir_id):
-            raise HTTPException(status_code=409, detail=MENSAJE_DUPLICADO)
+            raise ProductoDuplicado
 
     @router.get(
         "",
@@ -52,8 +53,8 @@ def rutas_productos(almacen: RepositorioProductos) -> APIRouter:
                    409: RESPUESTA_409, 422: RESPUESTA_422},
     )
     def crear_producto(entrada: ProductoEntrada) -> Producto:
-        comprobar_duplicado(entrada)
         try:
+            comprobar_duplicado(entrada)
             return almacen.crear(entrada)
         except ProductoDuplicado:
             raise HTTPException(status_code=409, detail=MENSAJE_DUPLICADO) from None
@@ -73,8 +74,8 @@ def rutas_productos(almacen: RepositorioProductos) -> APIRouter:
     )
     def reemplazar_producto(id: int, entrada: ProductoEntrada) -> Producto:
         buscar_producto(id)
-        comprobar_duplicado(entrada, excluir_id=id)
         try:
+            comprobar_duplicado(entrada, excluir_id=id)
             producto = almacen.reemplazar(id, entrada)
         except ProductoDuplicado:
             raise HTTPException(status_code=409, detail=MENSAJE_DUPLICADO) from None
