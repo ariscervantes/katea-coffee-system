@@ -123,6 +123,7 @@ Para que funcione debe existir un producto disponible con ese `producto_id`; los
 - Contrato OpenAPI interactivo: http://127.0.0.1:8000/docs (también `/redoc`).
 - Contrato exportado: [docs/openapi.json](docs/openapi.json). Se regenera con `python scripts/generar_contrato.py`.
 - Errores: todos responden `{"error": "...", "detalles": [...]}`. El catálogo de códigos (400, 401, 403, 404, 409, 422, 502, 503, 504, 500) está en [docs/errores.md](docs/errores.md).
+- Seguridad: cómo responde la API a cada riesgo del OWASP API Security Top 10 (2023) y qué queda pendiente, en [docs/seguridad.md](docs/seguridad.md).
 
 ## Cómo probarla
 
@@ -156,7 +157,7 @@ En bash, la terminal 2 queda en una línea: `EXTERNO_URL=http://127.0.0.1:9000 p
 
 ## REST y SOAP en mi proyecto
 
-[COMPLETAR]
+Katea usa REST: expone recursos como `/productos` y `/pedidos`, intercambia JSON y usa los métodos HTTP (GET, POST, PUT, DELETE) y sus códigos de estado para expresar el resultado. Es sin estado: cada petición lleva su JWT, así que el servidor no guarda sesiones. SOAP, en cambio, es un protocolo con un contrato formal en WSDL y mensajes en XML; se usa donde se exige un contrato estricto entre sistemas, como el servicio de consulta del estado de un CFDI del SAT. Katea no implementa SOAP: esto es solo una propuesta. Si se agregara, viviría en `app/integraciones/` (por ejemplo, `sat_cfdi.py`) con el mismo patrón que `gemini.py`: timeout por intento, errores 502/504 cuando el servicio falla o tarda, y su configuración en variables de entorno.
 
 ## Equipo y reflexiones
 
